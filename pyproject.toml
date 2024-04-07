@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "libcolonyfind"
+dynamic = ["version"]
+description = 'Library providing methods for the automatic detection and characterization of bacterial colonies in petri dishes on the colony-picking robot design project'
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = []
+dependencies = [
+  "opencv-python>=4.5.3",
+]
+authors = [
+  { name = "John Fike", email = "colonypicker@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+[project.urls]
+Documentation = "https://github.com/msudesigncpr/libcolonyfind#readme"
+Issues = "https://github.com/msudesigncpr/libcolonyfind/issues"
+Source = "https://github.com/msudesigncpr/libcolonyfind"
+
+[tool.hatch.version]
+path = "src/libcolonyfind/__about__.py"
+
+[tool.hatch.build]
+exclude = [
+  "/.github",
+]
+
+[tool.hatch.envs.doc]
+dependencies = [
+  "pdoc>=14.1.0,<15.0.0"
+]
+scripts.build-doc = "pdoc -o doc src/libcolonyfind"
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.11", "3.12"]
+
+[tool.hatch.envs.types]
+dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/libcolonyfind}"
