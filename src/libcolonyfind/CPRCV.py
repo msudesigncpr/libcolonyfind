@@ -34,25 +34,27 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-
 def find_colonies():
     # run_cfu()
     coords = parse_cfu_csv()
     coords = remove_unsampleable_colonies(coords)
-    # coords = remove_extra_colonies(coords)
+    coords = remove_extra_colonies(coords)
     annotate_images(coords)
     drive_coords = generate_drive_coords(coords)
     return drive_coords
 
 def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_for_cfu_wsl_path = CONSTANTS.IMAGES_FOR_CFU_WSL_PATH, cfu_csv_win_dump_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH, cfu_csv_dump_prefix_wsl = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
-    """
-    uses WSL to run OpenCFU on images in img_folder_path
-    OpenCFU generates .csv files, which are moved to project directory (for now, see TODO above)
-    """
+    """uses WSL to run OpenCFU on images in img_folder_path
+    OpenCFU generates .csv files, which are moved to project directory (for now, see TODO above)"""
     
     # logging.info(" ")
-    logging.info("Initializing OpenCFU...")
-    os.chdir(WindowsPath(cfu_win_path))
+
+    try:
+        logging.info("Initializing OpenCFU...")
+        os.chdir(WindowsPath(cfu_win_path))
+    except:
+        logging.critical("Error initializing OpenCFU")
+        raise RuntimeError("Error initializing OpenCFU")
 
     try: 
         # FIXME: access denied to dump directory, cannot create
@@ -70,16 +72,20 @@ def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_
             cfu_image_wsl_path = images_for_cfu_wsl_path + base_file_name + ".jpg" # where cfu will look for img
             cfu_coord_wsl_path = cfu_csv_dump_prefix_wsl + base_file_name + '.csv' # where cfu will place coords to colonies it finds (ex /mnt/c/Users/colon/Downloads/GUI/src/cfu_coords/dish_0.csv)
 
-            # run cfu on images and move resultant coords to csv dumppath
-            subprocess.run(['wsl', './opencfu', '-i', cfu_image_wsl_path, '>', cfu_coord_wsl_path]) # TODO can I pipe to project dir path?
-            subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_win_dump_path])
+            try:
+                # run cfu on images and move resultant coords to csv dumppath
+                subprocess.run(['wsl', './opencfu', '-i', cfu_image_wsl_path, '>', cfu_coord_wsl_path]) # TODO can I pipe to project dir path?
+                subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_win_dump_path])
+            except:
+                logging.critical("WSL fucking exploded")
+                raise RuntimeError("WSL fucking exploded")
 
         logging.info("CFU processing complete")
         # logging.info(" ")
 
-    except Exception as e:
-        logging.error("CFU processing failed: %s", e)
-        raise("Error running CFU")
+    except:
+        logging.critical("CFU processing failed, terminating...")
+        raise RuntimeError("CFU processing failed, terminating...")
 
 def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
     """
@@ -136,8 +142,8 @@ def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
         
 
     except Exception as e:
-        logging.error("CFU CSV processing failed: %s", e)   #TODO fix logging
-        raise("Error parsing CFU CSVs")
+        logging.critical("CFU CSV processing failed: %s", e)   #TODO fix logging
+        raise RuntimeError("CFU CSV processing failed: %s", e)
 
 def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_dist = CONSTANTS.MIN_COLONY_DISTANCE, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, img_height = CONSTANTS.IMG_HEIGHT, img_width = CONSTANTS.IMG_WIDTH):
     '''
@@ -240,35 +246,40 @@ def remove_extra_colonies(coords):
     '''
     removes colonies from dishes with more than 16 colonies until there are 96 colonies total
     '''
-    # logging.info(" ")
-    logging.info("Removing extra colonies...")
+    try:
+        # logging.info(" ")
+        logging.info("Removing extra colonies...")
 
-    total_num_colonies = 0
-    counter_dict = {} # key is file name, value is number of times a colony has been removed from that file
+        total_num_colonies = 0
+        counter_dict = {} # key is file name, value is number of times a colony has been removed from that file
 
-    logging.info("Removing extra colonies...")
-    for _, coord_list in coords.items():
-        total_num_colonies = total_num_colonies + len(coord_list)
-        logging.info("Total number of colonies detected: %s", total_num_colonies)
+        logging.info("Removing extra colonies...")
+        for _, coord_list in coords.items():
+            total_num_colonies = total_num_colonies + len(coord_list)
+            logging.info("Total number of colonies detected: %s", total_num_colonies)
 
-    while total_num_colonies > 96:
-        random_file = random.choice(list(coords.keys()))
-        
-        # only remove colonies from dishes with more than 
-        if (len(coords[random_file]) > 16):
-            # Remove a random colony from the random file
-            random_colony = random.choice(coords[random_file])
-            coords[random_file].remove(random_colony)
-            counter_dict[random_file] = counter_dict.get(random_file, 0) + 1
+        while total_num_colonies > 96:
+            random_file = random.choice(list(coords.keys()))
             
-            total_num_colonies = 0
-            for _, coord_list in coords.items():
-                total_num_colonies = total_num_colonies + len(coord_list)
+            # only remove colonies from dishes with more than 
+            if (len(coords[random_file]) > 16):
+                # Remove a random colony from the random file
+                random_colony = random.choice(coords[random_file])
+                coords[random_file].remove(random_colony)
+                counter_dict[random_file] = counter_dict.get(random_file, 0) + 1
+                
+                total_num_colonies = 0
+                for _, coord_list in coords.items():
+                    total_num_colonies = total_num_colonies + len(coord_list)
 
-    logging.info("Removed %s colonies from each of the following files: %s", str(counter_dict.values())[12:-1], str(counter_dict.keys())[10:-1])
-    logging.info("Extra colonies removed")
-    # logging.info(" ")
-    return coords
+        logging.info("Removed %s colonies from each of the following files: %s", str(counter_dict.values())[12:-1], str(counter_dict.keys())[10:-1])
+        logging.info("Extra colonies removed")
+        # logging.info(" ")
+        return coords
+    except:
+        logging.critical("Error removing extra colonies")
+        raise RuntimeError
+
 
 
 def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path = CONSTANTS.ANNOTATION_IMAGE_INPUT_PATH, annotation_output_path = CONSTANTS.ANNOTATION_IMAGE_OUTPUT_PATH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH):
@@ -313,7 +324,8 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
 
                     except Exception as e:
                         logging.error("Error extracting colony number: %s", e)
-                        raise("Improperly formatted colony coordinates file")
+                        raise RuntimeError("Error extracting colony number: %s", e)
+
 
                     # draw circles around colonies, and write colony number next to them
                     try:
@@ -321,7 +333,8 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
                         cv2.putText( image, str(colony_number), (int(x + 30), int(y - 30)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 1) 
                     except Exception as e:
                         logging.error("Error drawing stuff on and near colonies")
-                        raise("Error drawing stuff on and near colonies")
+                        raise RuntimeError("Error drawing stuff on and near colonies")
+
 
             cv2.circle(image, (int(0.5*image_width),int(0.5*image_height)), int(petri_dish_roi * image_width), (0,255,0), 2)    # HACK:remove when xy coordinates are unfucked. shows where edges of petri dish should be
 
@@ -331,14 +344,14 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
                 cv2.imwrite(save_path, image)
             except Exception as e:
                 logging.error("Error saving annotated images to: %s", save_path)
-                raise("Error saving annotated images")
+                raise RuntimeError("Error saving annotated images")
 
         logging.info("Annotated image creation complete")
         # logging.info(" ")
     
     except Exception as e:
-        logging.info("An error occured while annotating images: ", e)
-        raise("Error creating metadata")
+        logging.critical("An error occured while annotating images: ", e)
+        raise RuntimeError("An error occured while annotating images: ", e)
 
 def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, cam_x_offsets = CONSTANTS.CAM_X_OFFSETS, cam_y_offsets = CONSTANTS.CAM_Y_OFFSETS, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
     # logging.info(" ")
@@ -359,7 +372,8 @@ def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM
     # logging.info(" ")
 
     if total_colony_counter > 96:
-        logging.error("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
-        raise("Error generating drive coords. It appears you are trying to sample over 96 colonies.")
+        logging.critical("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
+        raise RuntimeError("Error generating drive coords: expected 96 colonies or less, got %s" % total_colony_counter)
+
     else:
         return drive_coords
