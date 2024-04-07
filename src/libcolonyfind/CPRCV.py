@@ -39,7 +39,7 @@ def find_colonies():
     # run_cfu()
     coords = parse_cfu_csv()
     coords = remove_unsampleable_colonies(coords)
-    coords = remove_extra_colonies(coords)
+    # coords = remove_extra_colonies(coords)
     annotate_images(coords)
     drive_coords = generate_drive_coords(coords)
     return drive_coords
@@ -47,7 +47,10 @@ def find_colonies():
 def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_for_cfu_wsl_path = CONSTANTS.IMAGES_FOR_CFU_WSL_PATH, cfu_csv_win_dump_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH, cfu_csv_dump_prefix_wsl = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
     """
     uses WSL to run OpenCFU on images in img_folder_path
+    OpenCFU generates .csv files, which are moved to project directory (for now, see TODO above)
     """
+    
+    # logging.info(" ")
     logging.info("Initializing OpenCFU...")
     os.chdir(WindowsPath(cfu_win_path))
 
@@ -72,6 +75,7 @@ def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_
             subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_win_dump_path])
 
         logging.info("CFU processing complete")
+        # logging.info(" ")
 
     except Exception as e:
         logging.error("CFU processing failed: %s", e)
@@ -80,14 +84,20 @@ def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_
 def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
     """
     openCFU generates .csv files, which are moved to project directory (for now, see TODO above)
-    This function reads the .csv files, extracts the colony coordinates, and writes them to a .txt file
-    these coordinates are fractional (YOLO format)
+    This function reads the .csv files, extracts the colony coordinates returns a dict with the file name as the key, and the value as a list of coordinates for each colony in the image
+    for ex:
+    coords = {
+                'file1': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]],
+                'file2': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]],
+                'file3': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]]
+    }
     """
+    # logging.info(" ")
     logging.info("Parsing CFU CSVs...")
 
     coords = {}
-
     offset_index = 0
+
     try:
         for csv_file in os.listdir(csv_win_path):
             temp = []
@@ -112,6 +122,7 @@ def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
             offset_index = offset_index + 1
 
         logging.info("CFU CSV procecssing complete")
+        # logging.info(" ")
         return coords
 
         #FIXME 
@@ -129,7 +140,12 @@ def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
         raise("Error parsing CFU CSVs")
 
 def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_dist = CONSTANTS.MIN_COLONY_DISTANCE, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, img_height = CONSTANTS.IMG_HEIGHT, img_width = CONSTANTS.IMG_WIDTH):
-    logging.info("Removing doublet colonies...")
+    '''
+    Take in a dict with coords, and: remove colonies that are too close to the edge of the petri dish, too small, or too close to other colonies
+    temp_coords is a dict with the same keys as coords, but the values are lists of coordinates for colonies that are sampleable
+    '''
+    # logging.info(" ")
+    logging.info("Removing unsampleable colonies...")
 
     # the dictionary has the file name as the key, and the value is a set of coordinates to each colony in the iamge
     # 
@@ -142,26 +158,25 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
     #           'file3': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]]
     #          }
     temp_coords = {}
-    # temp_coords.update(dict.fromkeys(coords.keys(), []) )
     good_colony_counter = 0
 
-    for file_name, coord_set in coords.items():
-        logging.info("----------Processing coord file %s----------", file_name)
+    for file_name, coord_list in coords.items():
+        logging.info("----------Processing coords for image %s----------", file_name)
         bad_colony_counter = 0
         too_small_colony_counter = 0
         over_edge_colony_counter = 0
         doublet_colony_counter = 0
 
-        total_colonies_in_image = len(coord_set)    
-        temp_coords[file_name] = []
+        total_colonies_in_image = len(coord_list)    
+        temp_coords[file_name] = []                                     # holds the coordinates of colonies that are sampleable
         
 
-        for main_colony_line in coord_set:
+        for main_colony_coords in coord_list:
             bad_colony = False
 
-            main_colony_x = float(main_colony_line[0]) / img_width
-            main_colony_y = float(main_colony_line[1]) / img_height
-            main_colony_r = float(main_colony_line[2]) / img_width
+            main_colony_x = float(main_colony_coords[0]) / img_width
+            main_colony_y = float(main_colony_coords[1]) / img_height
+            main_colony_r = float(main_colony_coords[2]) / img_width
 
             """ 
             check if the colony is in the petri dish
@@ -175,14 +190,14 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
                 bad_colony = True
                 too_small_colony_counter = too_small_colony_counter + 1
             else:
-                for neighbor_colony_line in coord_set: # mmm O(n^2). great.
-                    neighbor_colony_x = float(neighbor_colony_line[0]) / img_width
-                    neighbor_colony_y = float(neighbor_colony_line[1]) / img_height
-                    neighbor_colony_r = float(neighbor_colony_line[2]) / img_width
+                for neighbor_colony_coords in coord_list: # mmm O(n^2). great.
+                    neighbor_colony_x = float(neighbor_colony_coords[0]) / img_width
+                    neighbor_colony_y = float(neighbor_colony_coords[1]) / img_height
+                    neighbor_colony_r = float(neighbor_colony_coords[2]) / img_width
                     
                     
                     # bool for if the current neighbor is the main colony   
-                    neighbor_is_main = neighbor_colony_line == main_colony_line 
+                    neighbor_is_main = neighbor_colony_coords == main_colony_coords 
                     # bool for if the main colony is a doublet (is too close to neighbor)
                     main_is_doublet = distance_between_colonies(main_colony_x, main_colony_y, main_colony_r, neighbor_colony_x, neighbor_colony_y, neighbor_colony_r) < min_colony_dist 
 
@@ -191,21 +206,19 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
                         doublet_colony_counter = doublet_colony_counter + 1 
                     
 
-            if (not bad_colony) and (not temp_coords[file_name].__contains__(main_colony_line)):
-                # temp_coords[file_name].append([x, y, main_colony_r])
-                temp_coords[file_name].append(main_colony_line)
+            if (not bad_colony) and (not temp_coords[file_name].__contains__(main_colony_coords)):
+                temp_coords[file_name].append(main_colony_coords)
                 good_colony_counter = good_colony_counter + 1
 
             elif bad_colony:
                 bad_colony_counter = bad_colony_counter + 1
 
-
         logging.info("TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s " , too_small_colony_counter, doublet_colony_counter, over_edge_colony_counter)
         logging.info("DETECTED:...........%s | BAD:............ %s | GOOD:....................%s", total_colonies_in_image, bad_colony_counter,  len(temp_coords[file_name]))
-        logging.info(" ")
+        # logging.info(" ")
 
     logging.info("Doublet removal complete. %s colonies can be sampled from!", good_colony_counter)
-    logging.info(" ")
+    # logging.info(" ")
     return temp_coords
 
 def distance_from_center(x0, y0):
@@ -224,51 +237,69 @@ def distance_between_colonies(x0, y0, r0, x1, y1, r1):
     else: return -1
 
 def remove_extra_colonies(coords):
+    '''
+    removes colonies from dishes with more than 16 colonies until there are 96 colonies total
+    '''
+    # logging.info(" ")
+    logging.info("Removing extra colonies...")
+
     total_num_colonies = 0
+    counter_dict = {} # key is file name, value is number of times a colony has been removed from that file
 
     logging.info("Removing extra colonies...")
-    for _, coord_set in coords.items():
-        total_num_colonies = total_num_colonies + len(coord_set)
+    for _, coord_list in coords.items():
+        total_num_colonies = total_num_colonies + len(coord_list)
         logging.info("Total number of colonies detected: %s", total_num_colonies)
 
     while total_num_colonies > 96:
         random_file = random.choice(list(coords.keys()))
-        # Check if the selected file has non-empty coordinates
-        if (len(coords[random_file]) > 3):
+        
+        # only remove colonies from dishes with more than 
+        if (len(coords[random_file]) > 16):
             # Remove a random colony from the random file
             random_colony = random.choice(coords[random_file])
             coords[random_file].remove(random_colony)
+            counter_dict[random_file] = counter_dict.get(random_file, 0) + 1
             
             total_num_colonies = 0
-            for _, coord_set in coords.items():
-                total_num_colonies = total_num_colonies + len(coord_set)
+            for _, coord_list in coords.items():
+                total_num_colonies = total_num_colonies + len(coord_list)
 
+    logging.info("Removed %s colonies from each of the following files: %s", str(counter_dict.values())[12:-1], str(counter_dict.keys())[10:-1])
     logging.info("Extra colonies removed")
+    # logging.info(" ")
     return coords
 
 
 def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path = CONSTANTS.ANNOTATION_IMAGE_INPUT_PATH, annotation_output_path = CONSTANTS.ANNOTATION_IMAGE_OUTPUT_PATH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH):
-    well_number_index_counter = 0
+    '''
+    takes the images in the image input path, and: draws circles around the colonies, writes the well the colony is destined for next to each colony
+    saves annotated images to annotation output path
+    FIXME draws ROI circle around petri dish. remove when
+    xy coords are unfucked and camera is centered 
+    '''
+    # logging.info(" ")
+    logging.info("Creating annotated images...")
 
-    
+    well_number_index_counter = 0 # itertes for every colony, used to write well number next to colony
+
     try:
-        logging.info("Creating annotated images...")
         if not os.path.exists(annotation_output_path):
             logging.info("Creating annotated image directory: %s", annotation_output_path)
             os.makedirs(annotation_output_path)
         
 
         # Loop through each image file in the specified folder path
-        for file_name, coord_set in coords.items():
+        for file_name, coord_list in coords.items():
             
             image = cv2.imread(os.path.join(annotation_image_input_path, str(file_name) + '.jpg'))
         
 
             # Open the colony coordinates text file corresponding to the current image
 
-            if len(coord_set) > 0:
+            if len(coord_list) > 0:
                 # Iterate over each line in the text file
-                for colony_line in coord_set:
+                for colony_line in coord_list:
                     try:
                         x = int(colony_line[0])
                         y = int(colony_line[1])
@@ -277,7 +308,7 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
                             colony_number = wells[well_number_index_counter]
                             well_number_index_counter = well_number_index_counter + 1
                         else:
-                            logging.error("Well number index counter exceeded 96")
+                            logging.error("Well number index counter exceeded 96. Please remove extra colonies before generating drive coords")
                             colony_number = "ERR"
 
                     except Exception as e:
@@ -295,7 +326,7 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
             cv2.circle(image, (int(0.5*image_width),int(0.5*image_height)), int(petri_dish_roi * image_width), (0,255,0), 2)    # HACK:remove when xy coordinates are unfucked. shows where edges of petri dish should be
 
             save_path = os.path.join(annotation_output_path, str(file_name + '.jpg'))
-            logging.info("Saving image with %s colonies marked to %s", len(coord_set), save_path)
+            logging.info("Saving image with %s colonies marked to %s", len(coord_list), save_path)
             try:
                 cv2.imwrite(save_path, image)
             except Exception as e:
@@ -303,18 +334,32 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
                 raise("Error saving annotated images")
 
         logging.info("Annotated image creation complete")
+        # logging.info(" ")
     
     except Exception as e:
         logging.info("An error occured while annotating images: ", e)
         raise("Error creating metadata")
 
 def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, cam_x_offsets = CONSTANTS.CAM_X_OFFSETS, cam_y_offsets = CONSTANTS.CAM_Y_OFFSETS, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
+    # logging.info(" ")
+    logging.info("Generating drive coords...")
+
+    total_colony_counter = 0 
     dish_offset_index_counter = 0
     drive_coords = []
-    for file_name, coord_set in coords.items():
-            for colony_line in coord_set:
+
+    for _, coord_list in coords.items():
+            total_colony_counter = total_colony_counter + len(coord_list)
+            for colony_line in coord_list:
                 x = (cam_y_offsets[dish_offset_index_counter] - (cam_x / 2)) + (colony_line[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
                 y = (cam_x_offsets[dish_offset_index_counter] - (cam_y / 2)) + (colony_line[1]/img_height) * cam_y
                 drive_coords.extend([x, y])
             dish_offset_index_counter = dish_offset_index_counter + 1
-    return drive_coords
+    logging.info("Drive coords generted for %s colonies", total_colony_counter)
+    # logging.info(" ")
+
+    if total_colony_counter > 96:
+        logging.error("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
+        raise("Error generating drive coords. It appears you are trying to sample over 96 colonies.")
+    else:
+        return drive_coords
