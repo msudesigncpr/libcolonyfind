@@ -2,6 +2,7 @@ from pathlib import WindowsPath
 import subprocess
 import logging
 import constants_test as CONSTANTS
+import random
 import cv2
 import csv
 import os
@@ -21,7 +22,9 @@ import os
 #              I tried to pipe them directly into stuff  without wsl mv but it didn't work, so
 #               TODO: fix opencfu csv handling 
 
-
+# TODO Create drive coords
+                # x = (cam_y_offsets[dish_offset_index_counter] - (cam_x / 2)) + (main_colony_x/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
+                # y = (cam_x_offsets[dish_offset_index_counter] - (cam_y / 2)) + (main_colony_y/img_height) * cam_y
 
 
 LOGLEVEL = logging.INFO
@@ -32,30 +35,24 @@ logging.basicConfig(
 )
 
 
-
 def find_colonies():
     # run_cfu()
     coords = parse_cfu_csv()
-    drive_coords = remove_doublets(coords)
+    # print(coords)
+    coords = remove_doublets(coords)
+    coords = remove_extra_colonies(coords)
+    # print(coords)
+    annotate_images(coords)
+    drive_coords = generate_drive_coords(coords)
+    print(drive_coords)
     return drive_coords
 
-def run_cfu(img_folder_path = CONSTANTS.CFU_RAW_IMAGE_PATH, cfu_raw_images = CONSTANTS.CFU_RAW_IMAGE_PATH_WSL, csv_dump_path_win = CONSTANTS.CFU_CSV_DUMP_PATH_WIN):
+def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_for_cfu_wsl_path = CONSTANTS.IMAGES_FOR_CFU_WSL_PATH, cfu_csv_win_dump_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH, cfu_csv_dump_prefix_wsl = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
     """
-    runs WSL to execute OpenCFU on images in img_folder_path
-    cfu_raw_images is the wsl path to the images. this is in a different format
-    my current fix is to just have two paths, one for windows (img_folder_path)
-    and one for linux (cfu_raw_images)
-
-    cfu generates csvs with locations to the colonies it has found, and puts it in
-    cfu_csv_dump_path (another linux path)
-
-    for example,
-    img_folder_path 'C:\\Users\\colon\\...' -- CFU reads images from here. 
-    cfu_raw_images '/mnt/c/Users/colon/...' -- CFU reads images from here. SAME AS IMG_FOLDER_PATH BUT IN LINUX FORMAT
-    cfu_csv_dump_path '/mnt/c/Users/colon/...' -- CFU CSVs are dumped here
+    uses WSL to run OpenCFU on images in img_folder_path
     """
     logging.info("Initializing OpenCFU...")
-    os.chdir(WindowsPath(CONSTANTS.CFU_PATH_WIN))
+    os.chdir(WindowsPath(cfu_win_path))
 
     try: 
         # FIXME: access denied to dump directory, cannot create
@@ -66,18 +63,16 @@ def run_cfu(img_folder_path = CONSTANTS.CFU_RAW_IMAGE_PATH, cfu_raw_images = CON
         #     logging.error("Error creating CFU CSV dump directory: %s.", e)
         #     raise("Error creating CFU CSV dump directory")
 
-        for image in os.listdir(img_folder_path):
+        for image in os.listdir(images_for_cfu_win_path):
             base_file_name = os.path.splitext(os.path.basename(image))[0]
             logging.info("Processing image %s", base_file_name)
 
-            cfu_image_path = cfu_raw_images + base_file_name + ".jpg"
-            cfu_coord_path = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL + base_file_name + '.csv' # path to coords for individual colony
+            cfu_image_wsl_path = images_for_cfu_wsl_path + base_file_name + ".jpg" # where cfu will look for img
+            cfu_coord_wsl_path = cfu_csv_dump_prefix_wsl + base_file_name + '.csv' # where cfu will place coords to colonies it finds (ex /mnt/c/Users/colon/Downloads/GUI/src/cfu_coords/dish_0.csv)
 
             # run cfu on images and move resultant coords to csv dumppath
-            subprocess.run(['wsl', './opencfu', '-i', cfu_image_path, '>', cfu_coord_path])
-            subprocess.run(['wsl', 'mv', cfu_coord_path, csv_dump_path_win])
-
-
+            subprocess.run(['wsl', './opencfu', '-i', cfu_image_wsl_path, '>', cfu_coord_wsl_path]) # TODO can I pipe to project dir path?
+            subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_win_dump_path])
 
         logging.info("CFU processing complete")
 
@@ -86,7 +81,7 @@ def run_cfu(img_folder_path = CONSTANTS.CFU_RAW_IMAGE_PATH, cfu_raw_images = CON
         raise("Error running CFU")
 
 
-def parse_cfu_csv(csv_path = CONSTANTS.CFU_CSV_DUMP_PATH_WIN, ):
+def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
     """
     openCFU generates .csv files, which are moved to project directory (for now, see TODO above)
     This function reads the .csv files, extracts the colony coordinates, and writes them to a .txt file
@@ -98,12 +93,13 @@ def parse_cfu_csv(csv_path = CONSTANTS.CFU_CSV_DUMP_PATH_WIN, ):
 
     offset_index = 0
     try:
-        for csv_file in os.listdir(csv_path):
+        for csv_file in os.listdir(csv_win_path):
             temp = []
             base_file_name = os.path.splitext(os.path.basename(csv_file))[0]
             logging.info("Processing CFU CSV %s", base_file_name)
 
-            with open(os.path.join(csv_path, csv_file), 'r', newline='') as infile:
+            # read in csvs 
+            with open(os.path.join(csv_win_path, csv_file), 'r', newline='') as infile:
                 reader = csv.reader(infile)
 
                 rows = list(reader)
@@ -114,10 +110,10 @@ def parse_cfu_csv(csv_path = CONSTANTS.CFU_CSV_DUMP_PATH_WIN, ):
                     x = float(row[1])
                     y = float(row[2])
                     r = float(row[7])
-                    temp.append [x, y, r]
+                    temp.append([x, y, r])
                     
-                coords[base_file_name] = temp
-                offset_index = offset_index + 1
+            coords[base_file_name] = temp
+            offset_index = offset_index + 1
 
         logging.info("CFU CSV procecssing complete")
         return coords
@@ -135,8 +131,38 @@ def parse_cfu_csv(csv_path = CONSTANTS.CFU_CSV_DUMP_PATH_WIN, ):
     except Exception as e:
         logging.error("CFU CSV processing failed: %s", e)   #TODO fix logging
         raise("Error parsing CFU CSVs")
+    
 
-def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_dist = CONSTANTS.MIN_COLONY_DISTANCE, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, img_height = CONSTANTS.IMG_HEIGHT, img_width = CONSTANTS.IMG_WIDTH, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, cam_x_offsets = CONSTANTS.CAM_X_OFFSETS, cam_y_offsets = CONSTANTS.CAM_Y_OFFSETS, wells = CONSTANTS.WELLS):
+
+def remove_extra_colonies(coords):
+    total_num_colonies = 0
+
+    for _, coord_set in coords.items():
+        total_num_colonies = total_num_colonies + len(coord_set)
+        logging.info("Total number of colonies detected: %s", total_num_colonies)
+
+    while total_num_colonies > 96:
+        random_file = random.choice(list(coords.keys()))
+        # Check if the selected file has non-empty coordinates
+        if (len(coords[random_file]) > 3):
+            # Remove a random colony from the random file
+            random_colony = random.choice(coords[random_file])
+            coords[random_file].remove(random_colony)
+            
+            total_num_colonies = 0
+            for _, coord_set in coords.items():
+                total_num_colonies = total_num_colonies + len(coord_set)
+            logging.info("Total number of colonies remaining: %s", total_num_colonies)
+        else:
+            logging.warning("Selected file has empty coordinates, skipping removal.")
+
+    logging.info("Extra colonies removed")
+    return coords
+
+
+
+# FIXME 
+def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_dist = CONSTANTS.MIN_COLONY_DISTANCE, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, img_height = CONSTANTS.IMG_HEIGHT, img_width = CONSTANTS.IMG_WIDTH):
     logging.info("Removing doublet colonies...")
     good_colony_counter = 0
 
@@ -151,10 +177,9 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
     #           'file2': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]],
     #           'file3': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]]
     #          }
-    offset_index_counter = 0
-    drive_coords = []
-    annotation_coords = {}
-    well_plate_index_counter = 0
+    temp_coords = {}
+    # temp_coords.update(dict.fromkeys(coords.keys(), []) )
+    total_colony_counter = 0
 
     for file_name, coord_set in coords.items():
         logging.info("----------Processing coord file %s----------", file_name)
@@ -162,16 +187,16 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
         doublet_colony_counter = 0
         too_small_colony_counter = 0
         over_edge_colony_counter = 0
-        offset_index_counter = offset_index_counter + 1
+        total_colony_counter = total_colony_counter + len(coord_set)    
+        temp_coords[file_name] = []
         
 
         for main_colony_line in coord_set:
-
             bad_colony = False
 
-            main_colony_x = float(main_colony_line[1])
-            main_colony_y = float(main_colony_line[2])
-            main_colony_r = float(main_colony_line[3])
+            main_colony_x = float(main_colony_line[0]) / img_width
+            main_colony_y = float(main_colony_line[1]) / img_height
+            main_colony_r = float(main_colony_line[2]) / img_width
 
             """ 
             check if the colony is in the petri dish
@@ -186,9 +211,9 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
                 too_small_colony_counter = too_small_colony_counter + 1
             else:
                 for neighbor_colony_line in coord_set: # mmm O(n^2). great.
-                    neighbor_colony_x = float(neighbor_colony_line[1])
-                    neighbor_colony_y = float(neighbor_colony_line[2])
-                    neighbor_colony_r = float(neighbor_colony_line[3])
+                    neighbor_colony_x = float(neighbor_colony_line[0]) / img_width
+                    neighbor_colony_y = float(neighbor_colony_line[1]) / img_height
+                    neighbor_colony_r = float(neighbor_colony_line[2]) / img_width
                     
                     
                     # bool for if the current neighbor is the main colony   
@@ -201,26 +226,21 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
                         doublet_colony_counter = doublet_colony_counter + 1
                     
 
-            if (not bad_colony) and (not drive_coords.__contains__(main_colony_line)):
-                baseplate_x = (cam_y_offsets[offset_index_counter] - (cam_x / 2)) + (main_colony_x/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                baseplate_y = (cam_x_offsets[offset_index_counter] - (cam_y / 2)) + (main_colony_y/img_height) * cam_y
-                drive_coords.extend([baseplate_x, baseplate_y])
-
-                well = wells[well_plate_index_counter]
-                annotation_coords[file_name].append([main_colony_x, main_colony_y, main_colony_r, well])
-                well_plate_index_counter = well_plate_index_counter + 1
-            
+            if (not bad_colony) and (not temp_coords[file_name].__contains__(main_colony_line)):
+                # temp_coords[file_name].append([x, y, main_colony_r])
+                temp_coords[file_name].append(main_colony_line)
                 good_colony_counter = good_colony_counter + 1
+
             elif bad_colony:
                 bad_colony_counter = bad_colony_counter + 1
 
 
         logging.info("TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s " , too_small_colony_counter, doublet_colony_counter, over_edge_colony_counter)
-        # logging.info("DETECTED:...........%s | BAD:............ %s | GOOD:....................%s", len(lines), bad_colony_counter,  len(good_colonies))
+        logging.info("DETECTED:...........%s | BAD:............ %s | GOOD:....................%s", total_colony_counter, bad_colony_counter,  len(temp_coords))
         logging.info(" ")
     logging.info("Doublet removal complete. %s colonies can be sampled from!", good_colony_counter)
     logging.info(" ")
-    return drive_coords, annotation_coords
+    return temp_coords
 
 def distance_from_center(x0, y0):
     x_dist = abs(x0 - 0.5) ** 2
@@ -238,8 +258,11 @@ def distance_between_colonies(x0, y0, r0, x1, y1, r1):
     else: return -1
 
 
-# FIXME 
-def annotate_images(coords, annotation_image_input_path = CONSTANTS.ANNOTATION_IMAGE_INPUT_PATH, annotation_output_path = CONSTANTS.ANNOTATION_IMAGE_OUTPUT_PATH, annotation_coord_path = CONSTANTS.ANNOTATION_COORD_PATH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH):
+# FIXME fucking will break 
+def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path = CONSTANTS.ANNOTATION_IMAGE_INPUT_PATH, annotation_output_path = CONSTANTS.ANNOTATION_IMAGE_OUTPUT_PATH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH):
+    well_number_index_counter = 0
+
+    
     try:
         logging.info("Creating annotated images...")
         if not os.path.exists(annotation_output_path):
@@ -259,16 +282,15 @@ def annotate_images(coords, annotation_image_input_path = CONSTANTS.ANNOTATION_I
                 # Iterate over each line in the text file
                 for colony_line in coord_set:
                     try:
-                        x = int(float(colony_line[1]))
-                        y = int(float(colony_line[2]))
-                        r = int(float(colony_line[3]))
-
-                        if len(colony_line)>3: 
-                            colony_number = str(colony_line[4])
-                            font_size = 2
-                        else: 
-                            colony_number = colony_line[3][:6]
-                            font_size = 1
+                        x = int(colony_line[0])
+                        y = int(colony_line[1])
+                        r = int(colony_line[2])
+                        if well_number_index_counter < 96:
+                            colony_number = wells[well_number_index_counter]
+                            well_number_index_counter = well_number_index_counter + 1
+                        else:
+                            logging.error("Well number index counter exceeded 96")
+                            colony_number = "ERR"
 
                     except Exception as e:
                         logging.error("Error extracting colony number: %s", e)
@@ -276,8 +298,9 @@ def annotate_images(coords, annotation_image_input_path = CONSTANTS.ANNOTATION_I
 
                     # draw circles around colonies, and write colony number next to them
                     try:
-                        cv2.circle(image, (x, y), int(r*2), (0, 0, 0), 2)
-                        cv2.putText( image, str(colony_number), (int(x + 30), int(y - 30)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (0, 0, 0), 1) 
+                        print("Drawing circle around colony at x: %s, y: %s, r: %s", x, y, r)
+                        cv2.circle(image, (x, y), int(r), (0, 0, 0), 2)
+                        cv2.putText( image, str(colony_number), (int(x + 30), int(y - 30)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 1) 
                     except Exception as e:
                         logging.error("Error drawing stuff on and near colonies")
                         raise("Error drawing stuff on and near colonies")
@@ -299,4 +322,13 @@ def annotate_images(coords, annotation_image_input_path = CONSTANTS.ANNOTATION_I
         logging.info("An error occured while annotating images: ", e)
         raise("Error creating metadata")
 
-
+def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, cam_x_offsets = CONSTANTS.CAM_X_OFFSETS, cam_y_offsets = CONSTANTS.CAM_Y_OFFSETS, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
+    dish_offset_index_counter = 0
+    drive_coords = []
+    for file_name, coord_set in coords.items():
+            for colony_line in coord_set:
+                x = (cam_y_offsets[dish_offset_index_counter] - (cam_x / 2)) + (colony_line[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
+                y = (cam_x_offsets[dish_offset_index_counter] - (cam_y / 2)) + (colony_line[1]/img_height) * cam_y
+                drive_coords.extend([x, y])
+            dish_offset_index_counter = dish_offset_index_counter + 1
+    return drive_coords
