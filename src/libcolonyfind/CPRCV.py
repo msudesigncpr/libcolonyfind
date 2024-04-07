@@ -38,13 +38,10 @@ logging.basicConfig(
 def find_colonies():
     # run_cfu()
     coords = parse_cfu_csv()
-    # print(coords)
-    coords = remove_doublets(coords)
+    coords = remove_unsampleable_colonies(coords)
     coords = remove_extra_colonies(coords)
-    # print(coords)
     annotate_images(coords)
     drive_coords = generate_drive_coords(coords)
-    print(drive_coords)
     return drive_coords
 
 def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_for_cfu_wsl_path = CONSTANTS.IMAGES_FOR_CFU_WSL_PATH, cfu_csv_win_dump_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH, cfu_csv_dump_prefix_wsl = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
@@ -79,7 +76,6 @@ def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_
     except Exception as e:
         logging.error("CFU processing failed: %s", e)
         raise("Error running CFU")
-
 
 def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
     """
@@ -131,41 +127,9 @@ def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
     except Exception as e:
         logging.error("CFU CSV processing failed: %s", e)   #TODO fix logging
         raise("Error parsing CFU CSVs")
-    
 
-
-def remove_extra_colonies(coords):
-    total_num_colonies = 0
-
-    for _, coord_set in coords.items():
-        total_num_colonies = total_num_colonies + len(coord_set)
-        logging.info("Total number of colonies detected: %s", total_num_colonies)
-
-    while total_num_colonies > 96:
-        random_file = random.choice(list(coords.keys()))
-        # Check if the selected file has non-empty coordinates
-        if (len(coords[random_file]) > 3):
-            # Remove a random colony from the random file
-            random_colony = random.choice(coords[random_file])
-            coords[random_file].remove(random_colony)
-            
-            total_num_colonies = 0
-            for _, coord_set in coords.items():
-                total_num_colonies = total_num_colonies + len(coord_set)
-            logging.info("Total number of colonies remaining: %s", total_num_colonies)
-        else:
-            logging.warning("Selected file has empty coordinates, skipping removal.")
-
-    logging.info("Extra colonies removed")
-    return coords
-
-
-
-# FIXME 
-def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_dist = CONSTANTS.MIN_COLONY_DISTANCE, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, img_height = CONSTANTS.IMG_HEIGHT, img_width = CONSTANTS.IMG_WIDTH):
+def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_dist = CONSTANTS.MIN_COLONY_DISTANCE, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, img_height = CONSTANTS.IMG_HEIGHT, img_width = CONSTANTS.IMG_WIDTH):
     logging.info("Removing doublet colonies...")
-    good_colony_counter = 0
-
 
     # the dictionary has the file name as the key, and the value is a set of coordinates to each colony in the iamge
     # 
@@ -179,15 +143,16 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
     #          }
     temp_coords = {}
     # temp_coords.update(dict.fromkeys(coords.keys(), []) )
-    total_colony_counter = 0
+    good_colony_counter = 0
 
     for file_name, coord_set in coords.items():
         logging.info("----------Processing coord file %s----------", file_name)
         bad_colony_counter = 0
-        doublet_colony_counter = 0
         too_small_colony_counter = 0
         over_edge_colony_counter = 0
-        total_colony_counter = total_colony_counter + len(coord_set)    
+        doublet_colony_counter = 0
+
+        total_colonies_in_image = len(coord_set)    
         temp_coords[file_name] = []
         
 
@@ -205,7 +170,7 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
             """
             if distance_from_center(main_colony_x, main_colony_y) > petri_dish_roi: 
                 bad_colony = True
-                over_edge_colony_counter = True 
+                over_edge_colony_counter = over_edge_colony_counter + 1 
             elif main_colony_r < min_colony_radius:
                 bad_colony = True
                 too_small_colony_counter = too_small_colony_counter + 1
@@ -223,7 +188,7 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
 
                     if (not neighbor_is_main) and main_is_doublet:
                         bad_colony = True
-                        doublet_colony_counter = doublet_colony_counter + 1
+                        doublet_colony_counter = doublet_colony_counter + 1 
                     
 
             if (not bad_colony) and (not temp_coords[file_name].__contains__(main_colony_line)):
@@ -236,8 +201,9 @@ def remove_doublets(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colon
 
 
         logging.info("TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s " , too_small_colony_counter, doublet_colony_counter, over_edge_colony_counter)
-        logging.info("DETECTED:...........%s | BAD:............ %s | GOOD:....................%s", total_colony_counter, bad_colony_counter,  len(temp_coords))
+        logging.info("DETECTED:...........%s | BAD:............ %s | GOOD:....................%s", total_colonies_in_image, bad_colony_counter,  len(temp_coords[file_name]))
         logging.info(" ")
+
     logging.info("Doublet removal complete. %s colonies can be sampled from!", good_colony_counter)
     logging.info(" ")
     return temp_coords
@@ -257,8 +223,30 @@ def distance_between_colonies(x0, y0, r0, x1, y1, r1):
         return distance - (r0 + r1)
     else: return -1
 
+def remove_extra_colonies(coords):
+    total_num_colonies = 0
 
-# FIXME fucking will break 
+    logging.info("Removing extra colonies...")
+    for _, coord_set in coords.items():
+        total_num_colonies = total_num_colonies + len(coord_set)
+        logging.info("Total number of colonies detected: %s", total_num_colonies)
+
+    while total_num_colonies > 96:
+        random_file = random.choice(list(coords.keys()))
+        # Check if the selected file has non-empty coordinates
+        if (len(coords[random_file]) > 3):
+            # Remove a random colony from the random file
+            random_colony = random.choice(coords[random_file])
+            coords[random_file].remove(random_colony)
+            
+            total_num_colonies = 0
+            for _, coord_set in coords.items():
+                total_num_colonies = total_num_colonies + len(coord_set)
+
+    logging.info("Extra colonies removed")
+    return coords
+
+
 def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path = CONSTANTS.ANNOTATION_IMAGE_INPUT_PATH, annotation_output_path = CONSTANTS.ANNOTATION_IMAGE_OUTPUT_PATH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH):
     well_number_index_counter = 0
 
@@ -298,7 +286,6 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
 
                     # draw circles around colonies, and write colony number next to them
                     try:
-                        print("Drawing circle around colony at x: %s, y: %s, r: %s", x, y, r)
                         cv2.circle(image, (x, y), int(r), (0, 0, 0), 2)
                         cv2.putText( image, str(colony_number), (int(x + 30), int(y - 30)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 1) 
                     except Exception as e:
@@ -309,7 +296,6 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
 
             save_path = os.path.join(annotation_output_path, str(file_name + '.jpg'))
             logging.info("Saving image with %s colonies marked to %s", len(coord_set), save_path)
-            # logging.info("Marked image saved" + str(base_file_name) + ".jpg") # TODO: fix logging
             try:
                 cv2.imwrite(save_path, image)
             except Exception as e:
