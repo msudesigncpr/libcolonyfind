@@ -91,6 +91,7 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
     except:
         logging.critical("CFU processing failed, terminating...")
         raise RuntimeError("CFU processing failed, terminating...")
+    os.chdir(init_dir)
 
 def parse_cfu_csv(csv_path):
     """
