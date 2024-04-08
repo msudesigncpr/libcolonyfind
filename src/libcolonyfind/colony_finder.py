@@ -44,8 +44,8 @@ def find_colonies(raw_image_path, csv_out_path):
     coords = remove_unsampleable_colonies(coords)
     coords = remove_extra_colonies(coords)
     annotated_images = annotate_images(coords)
-    drive_coords = generate_drive_coords(coords)
-    return drive_coords
+    # drive_coords = generate_drive_coords(coords)
+    return coords
 
 def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
     """uses WSL to run OpenCFU on images in img_folder_path
@@ -56,11 +56,10 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
     cfu_csv_win_dump_path = Path(csv_out_path).resolve()
     cfu_csv_wsl_dump_path = cfu_csv_win_dump_path.as_posix().replace("C:", "/mnt/c")
 
-    print(images_for_cfu_win_path)
-    print(images_for_cfu_wsl_path)
-    print(cfu_csv_win_dump_path)
-    print(cfu_csv_wsl_dump_path)
-    # logging.info(" ")
+    # print(images_for_cfu_win_path)
+    # print(images_for_cfu_wsl_path)
+    # print(cfu_csv_win_dump_path)
+    # print(cfu_csv_wsl_dump_path)
 
     init_dir = os.getcwd()
     try:
@@ -71,14 +70,6 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
         raise RuntimeError("Error changing directory")
 
     try: 
-        # FIXME: access denied to dump directory, cannot create
-        # logging.info("Creating CFU CSV dump directory...")
-        # try: 
-        #     if not os.path.exists(cfu_csv_dump_path): os.makedirs(cfu_csv_dump_path)
-        # except Exception as e:
-        #     logging.error("Error creating CFU CSV dump directory: %s.", e)
-        #     raise("Error creating CFU CSV dump directory")
-
         for image in os.listdir(images_for_cfu_win_path):
             base_file_name = os.path.splitext(os.path.basename(image))[0]
             logging.info("Processing image %s", base_file_name)
@@ -144,16 +135,6 @@ def parse_cfu_csv(csv_path):
         logging.info("CFU CSV procecssing complete")
         # logging.info(" ")
         return coords
-
-        #FIXME 
-        # logging.info("Destroying CFU CSV dump directory[%s]...", coords_to_convert)
-        # try:
-        #     os.rmdir(coords_to_convert)
-        #     if os.path.exists(coords_to_convert): shutil.rmtree("valid_colony_list")
-        # except Exception as e:
-        #     logging.error("Error destroying CFU CSV dump directory: %s.", e)
-        #     raise("Error destroying CFU CSV dump directory")
-        
 
     except Exception as e:
         logging.critical("CFU CSV processing failed: %s", e)   #TODO fix logging
@@ -370,11 +351,10 @@ def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM
     for _, coord_list in coords.items():
             total_colony_counter = total_colony_counter + len(coord_list)
             for colony_line in coord_list:
-                x = (cam_y_offsets[dish_offset_index_counter] - (cam_x / 2)) + (colony_line[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                y = (cam_x_offsets[dish_offset_index_counter] - (cam_y / 2)) + (colony_line[1]/img_height) * cam_y
+                x = (colony_line[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
+                y = (colony_line[1]/img_height) * cam_y
                 drive_coords.extend([x, y])
             dish_offset_index_counter = dish_offset_index_counter + 1
-    logging.info("Drive coords generted for %s colonies", total_colony_counter)
     # logging.info(" ")
 
     if total_colony_counter > 96:
@@ -382,4 +362,5 @@ def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM
         raise RuntimeError("Error generating drive coords: expected 96 colonies or less, got %s" % total_colony_counter)
 
     else:
+        logging.info("Drive coords generted for %s colonies", total_colony_counter)
         return drive_coords
