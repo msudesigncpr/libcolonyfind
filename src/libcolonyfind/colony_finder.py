@@ -44,8 +44,8 @@ def find_colonies(raw_image_path, csv_out_path):
     coords = remove_unsampleable_colonies(coords)
     coords = remove_extra_colonies(coords)
     annotated_images = annotate_images(coords)
-    # drive_coords = generate_drive_coords(coords)
-    return coords
+    baseplate_coords = generate_baseplate_coords(coords)
+    return baseplate_coords
 
 def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
     """uses WSL to run OpenCFU on images in img_folder_path
@@ -306,11 +306,11 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
 
             if len(coord_list) > 0:
                 # Iterate over each line in the text file
-                for colony_line in coord_list:
+                for colony_coord in coord_list:
                     try:
-                        x = int(colony_line[0])
-                        y = int(colony_line[1])
-                        r = int(colony_line[2])
+                        x = int(colony_coord[0])
+                        y = int(colony_coord[1])
+                        r = int(colony_coord[2])
                         if well_number_index_counter < 96:
                             colony_number = wells[well_number_index_counter]
                             well_number_index_counter = well_number_index_counter + 1
@@ -340,22 +340,17 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
         logging.critical("An error occured while annotating images: ", e)
         raise RuntimeError("An error occured while annotating images: ", e)
 
-def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, cam_x_offsets = CONSTANTS.CAM_X_OFFSETS, cam_y_offsets = CONSTANTS.CAM_Y_OFFSETS, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
-    # logging.info(" ")
+def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
     logging.info("Generating drive coords...")
 
     total_colony_counter = 0 
     dish_offset_index_counter = 0
-    drive_coords = []
 
     for _, coord_list in coords.items():
-            total_colony_counter = total_colony_counter + len(coord_list)
-            for colony_line in coord_list:
-                x = (colony_line[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                y = (colony_line[1]/img_height) * cam_y
-                drive_coords.extend([x, y])
+            for colony_coord in coord_list:
+                colony_coord[0] = (colony_coord[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
+                colony_coord[1] = (colony_coord[1]/img_height) * cam_y
             dish_offset_index_counter = dish_offset_index_counter + 1
-    # logging.info(" ")
 
     if total_colony_counter > 96:
         logging.critical("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
@@ -363,4 +358,4 @@ def generate_drive_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM
 
     else:
         logging.info("Drive coords generted for %s colonies", total_colony_counter)
-        return drive_coords
+        return coords
