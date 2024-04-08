@@ -119,13 +119,13 @@ def parse_cfu_csv(csv_path):
     offset_index = 0
 
     try:
-        for csv_file in os.listdir(csv_win_path):
+        for csv_file in os.listdir(csv_path):
             temp = []
             base_file_name = os.path.splitext(os.path.basename(csv_file))[0]
             logging.info("Processing CFU CSV %s", base_file_name)
 
             # read in csvs 
-            with open(os.path.join(csv_win_path, csv_file), 'r', newline='') as infile:
+            with open(os.path.join(csv_path, csv_file), 'r', newline='') as infile:
                 reader = csv.reader(infile)
 
                 rows = list(reader)
