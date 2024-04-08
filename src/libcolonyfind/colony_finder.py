@@ -1,4 +1,4 @@
-from pathlib import WindowsPath
+from pathlib import WindowsPath, Path
 import subprocess
 import logging
 import random
@@ -62,18 +62,28 @@ def find_colonies():
     drive_coords = generate_drive_coords(coords)
     return drive_coords
 
-def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_for_cfu_wsl_path = CONSTANTS.IMAGES_FOR_CFU_WSL_PATH, cfu_csv_win_dump_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH, cfu_csv_dump_prefix_wsl = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
+def run_cfu(raw_image_path, csv_out_path, cfu_csv_dump_prefix_wsl = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
     """uses WSL to run OpenCFU on images in img_folder_path
     OpenCFU generates .csv files, which are moved to project directory (for now, see TODO above)"""
     
+    images_for_cfu_win_path = Path(raw_image_path).resolve()
+    images_for_cfu_wsl_path = images_for_cfu_win_path.as_posix().replace("C:", "/mnt/c")
+    cfu_csv_win_dump_path = Path(csv_out_path).resolve()
+    cfu_csv_wsl_dump_path = cfu_csv_win_dump_path.as_posix().replace("C:", "/mnt/c")
+
+    print(images_for_cfu_win_path)
+    print(images_for_cfu_wsl_path)
+    print(cfu_csv_win_dump_path)
+    print(cfu_csv_wsl_dump_path)
     # logging.info(" ")
 
+    init_dir = os.getcwd()
     try:
-        logging.info("Initializing OpenCFU...")
+        logging.info("Moving to OpenCFU dir...")
         os.chdir(WindowsPath(cfu_win_path))
     except:
-        logging.critical("Error initializing OpenCFU")
-        raise RuntimeError("Error initializing OpenCFU")
+        logging.critical("Error changing directory")
+        raise RuntimeError("Error changing directory")
 
     try: 
         # FIXME: access denied to dump directory, cannot create
@@ -88,13 +98,14 @@ def run_cfu(images_for_cfu_win_path = CONSTANTS.IMAGES_FOR_CFU_WIN_PATH, images_
             base_file_name = os.path.splitext(os.path.basename(image))[0]
             logging.info("Processing image %s", base_file_name)
 
-            cfu_image_wsl_path = images_for_cfu_wsl_path + base_file_name + ".jpg" # where cfu will look for img
-            cfu_coord_wsl_path = cfu_csv_dump_prefix_wsl + base_file_name + '.csv' # where cfu will place coords to colonies it finds (ex /mnt/c/Users/colon/Downloads/GUI/src/cfu_coords/dish_0.csv)
-
+            cfu_image_wsl_path = images_for_cfu_wsl_path + '/' + base_file_name + ".jpg" # where cfu will look for img
+            cfu_coord_wsl_path = cfu_csv_wsl_dump_path + '/' + base_file_name + '.csv' # where cfu will place coords to colonies it finds (ex /mnt/c/Users/colon/Downloads/GUI/src/cfu_coords/dish_0.csv)
+            print(cfu_image_wsl_path)
+            print(cfu_coord_wsl_path)
             try:
                 # run cfu on images and move resultant coords to csv dumppath
                 subprocess.run(['wsl', './opencfu', '-i', cfu_image_wsl_path, '>', cfu_coord_wsl_path]) # TODO can I pipe to project dir path?
-                subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_win_dump_path])
+                #subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_wsl_dump_path])
             except:
                 logging.critical("WSL fucking exploded")
                 raise RuntimeError("WSL fucking exploded")
