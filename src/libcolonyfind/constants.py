@@ -16,7 +16,7 @@ CFU_CSV_DUMP_PREFIX_WSL = '../cfu_coords/'
 # CFU_CSV_DUMP_PATH_WIN = '\\\\wsl.localhost/Debian/home/colon/cfu_coords' # TODO Can I call functions on files in wsl? what does the path look like?
 
 # CFU_CSV_WIN_DUMP_PATH = 'C:\\Users\\colon\\Downloads\\GUI\\temp\\cfu_coords'
-CFU_CSV_WIN_DUMP_PATH = 'C:\\Users\\John Fike\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\cfu-csv' # FIXME REMOVE
+CFU_CSV_WIN_DUMP_PATH = 'C:\\Users\\colon\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\cfu-csv' # FIXME REMOVE
 
 IMAGES_FOR_CFU_WIN_PATH = 'C:\\Users\\colon\\Downloads\\GUI\\src\\4-5-images'  #### FIXME: Remove once coordinates unfucked
 IMAGES_FOR_CFU_WSL_PATH = '/mnt/c/Users/colon/Downloads/GUI/src/4-5-images/' #### FIXME: Remove once coordinates unfucked
@@ -37,8 +37,8 @@ WELLS =['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12
 # ANNOTATION_IMAGE_INPUT_PATH = 'C:\\Users\\colon\\Downloads\\GUI\\src\\4-5-images'
 # ANNOTATION_IMAGE_OUTPUT_PATH = 'C:\\Users\\colon\\Downloads\\GUI\\src\\annotated-images'
 
-ANNOTATION_IMAGE_INPUT_PATH = 'C:\\Users\\John Fike\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\4-5-images'
-ANNOTATION_IMAGE_OUTPUT_PATH = 'C:\\Users\\John Fike\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\annotated-images'
+ANNOTATION_IMAGE_INPUT_PATH = 'C:\\Users\\colon\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\4-5-images'
+ANNOTATION_IMAGE_OUTPUT_PATH = 'C:\\Users\\colon\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\annotated-images'
 
 # CFU_CSV_DUMP_PATH_WSL = '/mnt/c/Users/colon/Downloads/GUI/src/cfu_csv/unmod/'
 
