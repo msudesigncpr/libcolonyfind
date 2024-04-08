@@ -1,11 +1,13 @@
-import constants_test as CONSTANTS
 from pathlib import WindowsPath
 import subprocess
 import logging
 import random
-import cv2
 import csv
 import os
+
+import cv2
+
+from libcolonyfind import constants as CONSTANTS
 
 
 # lines with HACK are the ones you should probably change after xy coords are unfucked
