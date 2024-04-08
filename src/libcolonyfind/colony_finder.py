@@ -36,33 +36,18 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-class colony_finder:
-
-    def __init__(self):
-        self.raw_coords = {}
-        self.sampleable_coords = {}
-        self.annotated_images = {}
-        self.drive_coords = []
-
-    def find_colonies(self):
-        # run_cfu()
-        self.raw_coords = self.parse_cfu_csv()
-        self.sampleable_coords = self.remove_unsampleable_colonies(self.raw_coords)
-        self.sampleable_coords = self.remove_extra_colonies(self.sampleable_coords)
-        self.annotated_images = self.annotate_images(self.sampleable_coords)
-        self.drive_coords = self.generate_drive_coords(self.sampleable_coords)
 
 
-def find_colonies():
-    # run_cfu()
-    coords = parse_cfu_csv()
+def find_colonies(raw_image_path, csv_out_path):
+    run_cfu(raw_image_path, csv_out_path)
+    coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
     coords = remove_extra_colonies(coords)
-    annotate_images(coords)
+    annotated_images = annotate_images(coords)
     drive_coords = generate_drive_coords(coords)
     return drive_coords
 
-def run_cfu(raw_image_path, csv_out_path, cfu_csv_dump_prefix_wsl = CONSTANTS.CFU_CSV_DUMP_PREFIX_WSL, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
+def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
     """uses WSL to run OpenCFU on images in img_folder_path
     OpenCFU generates .csv files, which are moved to project directory (for now, see TODO above)"""
     
@@ -107,17 +92,16 @@ def run_cfu(raw_image_path, csv_out_path, cfu_csv_dump_prefix_wsl = CONSTANTS.CF
                 subprocess.run(['wsl', './opencfu', '-i', cfu_image_wsl_path, '>', cfu_coord_wsl_path]) # TODO can I pipe to project dir path?
                 #subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_wsl_dump_path])
             except:
-                logging.critical("WSL fucking exploded")
-                raise RuntimeError("WSL fucking exploded")
+                logging.critical("OpenCFU failed to run")
+                raise RuntimeError("OpenCFU failed to run")
 
         logging.info("CFU processing complete")
-        # logging.info(" ")
 
     except:
         logging.critical("CFU processing failed, terminating...")
         raise RuntimeError("CFU processing failed, terminating...")
 
-def parse_cfu_csv(csv_win_path = CONSTANTS.CFU_CSV_WIN_DUMP_PATH):
+def parse_cfu_csv(csv_path):
     """
     openCFU generates .csv files, which are moved to project directory (for now, see TODO above)
     This function reads the .csv files, extracts the colony coordinates returns a dict with the file name as the key, and the value as a list of coordinates for each colony in the image
@@ -366,19 +350,9 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
                         logging.error("Error drawing stuff on and near colonies")
                         raise RuntimeError("Error drawing stuff on and near colonies")
 
-
             cv2.circle(image, (int(0.5*image_width),int(0.5*image_height)), int(petri_dish_roi * image_width), (0,255,0), 2)    # HACK:remove when xy coordinates are unfucked. shows where edges of petri dish should be
             annotated_images.extend(image)
-            # save_path = os.path.join(annotation_output_path, str(file_name + '.jpg'))
-            # logging.info("Saving image with %s colonies marked to %s", len(coord_list), save_path)
-            # try:
-            #     cv2.imwrite(save_path, image)
-            # except Exception as e:
-            #     logging.error("Error saving annotated images to: %s", save_path)
-            #     raise RuntimeError("Error saving annotated images")
-
         logging.info("Annotated image creation complete")
-        # logging.info(" ")
         return (annotated_images)
     
     except Exception as e:
