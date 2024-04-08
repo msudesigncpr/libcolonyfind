@@ -1,1 +1,1 @@
-from libcolonyfind.colony_finder import run_cfu
+from libcolonyfind.colony_finder import find_colonies
