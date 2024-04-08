@@ -42,8 +42,8 @@ def find_colonies(raw_image_path, csv_out_path):
     run_cfu(raw_image_path, csv_out_path)
     coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
-    coords = remove_extra_colonies(coords)
-    annotated_images = annotate_images(coords)
+    # coords = remove_extra_colonies(coords)
+    # annotated_images = annotate_images(coords)
     baseplate_coords = generate_baseplate_coords(coords)
     return baseplate_coords
 
@@ -61,7 +61,6 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
     # print(cfu_csv_win_dump_path)
     # print(cfu_csv_wsl_dump_path)
 
-    init_dir = os.getcwd()
     try:
         logging.info("Moving to OpenCFU dir...")
         os.chdir(WindowsPath(cfu_win_path))
@@ -346,16 +345,20 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
     total_colony_counter = 0 
     dish_offset_index_counter = 0
 
-    for _, coord_list in coords.items():
+    for file_name, coord_list in coords.items():
             for colony_coord in coord_list:
                 colony_coord[0] = (colony_coord[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
                 colony_coord[1] = (colony_coord[1]/img_height) * cam_y
+                colony_coord[3] = file_name
             dish_offset_index_counter = dish_offset_index_counter + 1
 
-    if total_colony_counter > 96:
-        logging.critical("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
-        raise RuntimeError("Error generating drive coords: expected 96 colonies or less, got %s" % total_colony_counter)
+    # if total_colony_counter > 96:
+    #     logging.critical("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
+    #     raise RuntimeError("Error generating drive coords: expected 96 colonies or less, got %s" % total_colony_counter)
 
-    else:
-        logging.info("Drive coords generted for %s colonies", total_colony_counter)
-        return coords
+    # else:
+        # logging.info("Drive coords generted for %s colonies", total_colony_counter)
+        # return coords
+
+    logging.info("Drive coords generted for %s colonies", total_colony_counter)
+    return coords
