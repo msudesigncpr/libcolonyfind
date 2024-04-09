@@ -346,15 +346,18 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
         logging.critical("An error occured while annotating images: ", e)
         raise RuntimeError("An error occured while annotating images: ", e)
 
-def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
+def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT, wells = CONSTANTS.WELLS):
     logging.info("Generating baseplate coords...")
     try:
         total_colony_counter = 0 
         dish_offset_index_counter = 0
+        well_counter = 0
 
         for _, coord_list in coords.items():
                 for colony_coord in coord_list:
                     print(colony_coord)
+                    print("Well: ", wells[well_counter])
+
 
                     center_x = 0.5 * img_width
                     center_y = 0.5 * img_height
@@ -366,6 +369,7 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
                     colony_coord = colony_coord[:-1] # remove radius from colony coord
 
                     print(colony_coord)
+                    well_counter = well_counter + 1
 
                 dish_offset_index_counter = dish_offset_index_counter + 1
 
