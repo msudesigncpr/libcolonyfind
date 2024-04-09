@@ -39,7 +39,6 @@ logging.basicConfig(
 
 
 def find_colonies(raw_image_path, csv_out_path):
-    print("2.0.2")
     run_cfu(raw_image_path, csv_out_path)
     coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
@@ -351,8 +350,16 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
         for _, coord_list in coords.items():
                 for colony_coord in coord_list:
                     print(colony_coord)
-                    colony_coord[0] = (colony_coord[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                    colony_coord[1] = (colony_coord[1]/img_height) * cam_y
+
+                    center_x = 0.5 * img_width
+                    center_y = 0.5 * img_height
+
+                    colony_coord[0] = ((colony_coord[0] - center_x)/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
+                    colony_coord[1] = ((colony_coord[1] - center_y)/img_height) * cam_y
+                    colony_coord = colony_coord[:-1] # remove radius from colony coord
+
+                    print(colony_coord)
+
                 dish_offset_index_counter = dish_offset_index_counter + 1
 
         # if total_colony_counter > 96:
