@@ -41,7 +41,7 @@ def find_colonies(raw_image_path, csv_out_path, annotated_image_output_path = No
 
     print("Annotation input path: ", raw_image_path)
     print("Annotation output path: ", annotated_image_output_path)
-    if annotated_image_output_path is not None: annotate_images(coords, annotated_image_output_path=annotated_image_output_path, annotation_image_input_path=raw_image_path)
+    if annotated_image_output_path is not None: annotate_images(coords, raw_image_path, annotated_image_output_path)
     baseplate_coords = generate_baseplate_coords(coords)
     return baseplate_coords
 
