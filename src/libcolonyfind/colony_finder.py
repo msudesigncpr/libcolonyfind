@@ -344,24 +344,27 @@ def annotate_images(coords, wells = CONSTANTS.WELLS, annotation_image_input_path
 
 def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
     logging.info("Generating drive coords...")
+    try:
+        total_colony_counter = 0 
+        dish_offset_index_counter = 0
 
-    total_colony_counter = 0 
-    dish_offset_index_counter = 0
+        for file_name, coord_list in coords.items():
+                for colony_coord in coord_list:
+                    colony_coord[0] = (colony_coord[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
+                    colony_coord[1] = (colony_coord[1]/img_height) * cam_y
+                    colony_coord[3] = file_name
+                dish_offset_index_counter = dish_offset_index_counter + 1
 
-    for file_name, coord_list in coords.items():
-            for colony_coord in coord_list:
-                colony_coord[0] = (colony_coord[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                colony_coord[1] = (colony_coord[1]/img_height) * cam_y
-                colony_coord[3] = file_name
-            dish_offset_index_counter = dish_offset_index_counter + 1
+        # if total_colony_counter > 96:
+        #     logging.critical("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
+        #     raise RuntimeError("Error generating drive coords: expected 96 colonies or less, got %s" % total_colony_counter)
 
-    # if total_colony_counter > 96:
-    #     logging.critical("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
-    #     raise RuntimeError("Error generating drive coords: expected 96 colonies or less, got %s" % total_colony_counter)
+        # else:
+            # logging.info("Drive coords generted for %s colonies", total_colony_counter)
+            # return coords
 
-    # else:
-        # logging.info("Drive coords generted for %s colonies", total_colony_counter)
-        # return coords
-
-    logging.info("Drive coords generted for %s colonies", total_colony_counter)
-    return coords
+        logging.info("Drive coords generted for %s colonies", total_colony_counter)
+        return coords
+    except Exception as e:
+        logging.critical("Error generating drive coords: ", e)
+        raise RuntimeError("Error generating drive coords: ", e)
