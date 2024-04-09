@@ -348,12 +348,11 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
         total_colony_counter = 0 
         dish_offset_index_counter = 0
 
-        for file_name, coord_list in coords.items():
+        for _, coord_list in coords.items():
                 for colony_coord in coord_list:
                     print(colony_coord)
                     colony_coord[0] = (colony_coord[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
                     colony_coord[1] = (colony_coord[1]/img_height) * cam_y
-                    colony_coord[3] = file_name
                 dish_offset_index_counter = dish_offset_index_counter + 1
 
         # if total_colony_counter > 96:
