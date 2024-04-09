@@ -354,8 +354,8 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
                     center_x = 0.5 * img_width
                     center_y = 0.5 * img_height
 
-                    colony_coord[0] = ((0)/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                    colony_coord[1] = ((0)/img_height) * cam_y
+                    colony_coord[0] = 0
+                    colony_coord[1] = 0
 
                     # colony_coord[0] = ((colony_coord[0] - center_x)/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
                     # colony_coord[1] = ((colony_coord[1] - center_y)/img_height) * cam_y
