@@ -38,11 +38,15 @@ logging.basicConfig(
 
 
 
-def find_colonies(raw_image_path, csv_out_path):
+def find_colonies(raw_image_path, csv_out_path, annotate_image_input_path, annotated_image_output_path):
     run_cfu(raw_image_path, csv_out_path)
     coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
     # coords = remove_extra_colonies(coords)
+
+    print("Annotation input path: ", annotate_image_input_path)
+    print("Annotation output path: ", annotated_image_output_path)
+    annotated_images = annotate_images(coords, annotate_image_input_path= annotate_image_input_path, annotation_output_path= annotated_image_output_path)
     baseplate_coords = generate_baseplate_coords(coords)
     return baseplate_coords
 
@@ -333,7 +337,14 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
 
             cv2.circle(image, (int(0.5*image_width),int(0.5*image_height)), int(petri_dish_roi * image_width), (0,255,0), 2)    # HACK:remove when xy coordinates are unfucked. shows where edges of petri dish should be
             annotated_images.extend(image)
+
+
+            save_path = os.path.join(annotation_output_path, file_name + ".jpg")
+            logging.info("Saving image to: %s", save_path)
+            cv2.imwrite(save_path, image)
+
         logging.info("Annotated image creation complete")
+
         return (annotated_images)
     
     except Exception as e:
