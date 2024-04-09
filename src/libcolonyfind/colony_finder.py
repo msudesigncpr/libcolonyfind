@@ -277,7 +277,7 @@ def remove_extra_colonies(coords):
 
 
 
-def annotate_images(coords, annotation_image_input_path, annotation_output_path, wells = CONSTANTS.WELLS)
+def annotate_images(coords, annotation_image_input_path, annotation_output_path, wells = CONSTANTS.WELLS, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI):
     '''
     takes the images in the image input path, and: draws circles around the colonies, writes the well the colony is destined for next to each colony
     saves annotated images to annotation output path
