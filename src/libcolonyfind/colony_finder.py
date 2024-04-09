@@ -39,6 +39,7 @@ logging.basicConfig(
 
 
 def find_colonies(raw_image_path, csv_out_path):
+    print("2.0.2")
     run_cfu(raw_image_path, csv_out_path)
     coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
@@ -60,6 +61,7 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
     # print(images_for_cfu_wsl_path)
     # print(cfu_csv_win_dump_path)
     # print(cfu_csv_wsl_dump_path)
+    init_dir = os.getcwd()
 
     try:
         logging.info("Moving to OpenCFU dir...")
