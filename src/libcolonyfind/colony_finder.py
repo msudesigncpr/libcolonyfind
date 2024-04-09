@@ -350,6 +350,7 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
 
         for file_name, coord_list in coords.items():
                 for colony_coord in coord_list:
+                    print(colony_coord)
                     colony_coord[0] = (colony_coord[0]/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
                     colony_coord[1] = (colony_coord[1]/img_height) * cam_y
                     colony_coord[3] = file_name
