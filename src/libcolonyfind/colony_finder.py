@@ -37,10 +37,8 @@ def find_colonies(raw_image_path, csv_out_path, annotated_image_output_path = No
     run_cfu(raw_image_path, csv_out_path)
     coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
-    # coords = remove_extra_colonies(coords)
+    coords = remove_extra_colonies(coords)
 
-    print("Annotation input path: ", raw_image_path)
-    print("Annotation output path: ", annotated_image_output_path)
     if annotated_image_output_path is not None: annotate_images(coords, raw_image_path, annotated_image_output_path)
     baseplate_coords = generate_baseplate_coords(coords)
     return baseplate_coords
@@ -270,9 +268,9 @@ def remove_extra_colonies(coords):
         logging.info("Extra colonies removed")
         # logging.info(" ")
         return coords
-    except:
-        logging.critical("Error removing extra colonies")
-        raise RuntimeError
+    except Exception as e:
+        logging.critical("Error removing extra colonies: ", e)
+        raise RuntimeError("Error removing extra colonies: ", e)
 
 
 
@@ -291,16 +289,20 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
 
     try:
         if not os.path.exists(annotation_output_path):
-            logging.info("Creating annotated image directory: %s", annotation_output_path)
-            os.makedirs(annotation_output_path)
-        
+            try:
+                logging.info("Creating annotated image directory: %s", annotation_output_path)
+                os.makedirs(annotation_output_path)
+            except Exception as e:
+                logging.info("Error creating annotation image output directory: ", e)
+                raise RuntimeError("Error creating annotationt image output diretory: ", e)
 
+        logging.info("Annotated images will be saved to %s", annotation_output_path)
+        
         # Loop through each image file in the specified folder path
         for file_name, coord_list in coords.items():
-            logging.info("Creating annotations for ", file_name)
+            logging.info("Creating annotations for %s", file_name)
             image = cv2.imread(os.path.join(annotation_image_input_path, str(file_name) + '.jpg'))
         
-
             # Open the colony coordinates text file corresponding to the current image
 
             if len(coord_list) > 0:
