@@ -356,7 +356,6 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
         for _, coord_list in coords.items():
                 for colony_coord in coord_list:
                     print(colony_coord)
-                    print("Well: ", wells[well_counter])
 
 
                     center_x = 0.5 * img_width
@@ -368,7 +367,7 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
 
                     colony_coord = colony_coord[:-1] # remove radius from colony coord
 
-                    print(colony_coord)
+                    print("Well: ", wells[well_counter], "for colony coords: ", colony_coord)
                     well_counter = well_counter + 1
 
                 dish_offset_index_counter = dish_offset_index_counter + 1
