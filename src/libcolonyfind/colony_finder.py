@@ -24,10 +24,6 @@ from libcolonyfind import constants as CONSTANTS
 #              I tried to pipe them directly into stuff  without wsl mv but it didn't work, so
 #               TODO: fix opencfu csv handling 
 
-# TODO Create drive coords
-                # x = (cam_y_offsets[dish_offset_index_counter] - (cam_x / 2)) + (main_colony_x/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                # y = (cam_x_offsets[dish_offset_index_counter] - (cam_y / 2)) + (main_colony_y/img_height) * cam_y
-
 
 LOGLEVEL = logging.INFO
 logging.basicConfig(
@@ -37,16 +33,15 @@ logging.basicConfig(
 )
 
 
-
-def find_colonies(raw_image_path, csv_out_path, annotate_image_input_path, annotated_image_output_path):
+def find_colonies(raw_image_path, csv_out_path, annotated_image_output_path = None):
     run_cfu(raw_image_path, csv_out_path)
     coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
     # coords = remove_extra_colonies(coords)
 
-    print("Annotation input path: ", annotate_image_input_path)
+    print("Annotation input path: ", raw_image_path)
     print("Annotation output path: ", annotated_image_output_path)
-    annotated_images = annotate_images(coords, annotate_image_input_path= annotate_image_input_path, annotation_output_path= annotated_image_output_path)
+    if annotated_image_output_path is not None: annotate_images(coords, annotated_image_output_path=annotated_image_output_path, annotation_image_input_path=raw_image_path)
     baseplate_coords = generate_baseplate_coords(coords)
     return baseplate_coords
 
@@ -302,7 +297,7 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
 
         # Loop through each image file in the specified folder path
         for file_name, coord_list in coords.items():
-            
+            logging.info("Creating annotations for ", file_name)
             image = cv2.imread(os.path.join(annotation_image_input_path, str(file_name) + '.jpg'))
         
 
@@ -319,12 +314,12 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
                             colony_number = wells[well_number_index_counter]
                             well_number_index_counter = well_number_index_counter + 1
                         else:
-                            logging.error("Well number index counter exceeded 96. Please remove extra colonies before generating drive coords")
+                            logging.error("Well number index counter exceeded 96. Please remove extra colonies before generating baseplate coords")
                             colony_number = "ERR"
 
                     except Exception as e:
                         logging.error("Error extracting colony number: %s", e)
-                        raise RuntimeError("Error extracting colony number: %s", e)
+                        raise RuntimeError("Error extracting colony coords: %s", e)
 
 
                     # draw circles around colonies, and write colony number next to them
@@ -340,7 +335,7 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
 
 
             save_path = os.path.join(annotation_output_path, file_name + ".jpg")
-            logging.info("Saving image to: %s", save_path)
+            logging.info("Saving annotated image to: %s", save_path)
             cv2.imwrite(save_path, image)
 
         logging.info("Annotated image creation complete")
@@ -352,7 +347,7 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
         raise RuntimeError("An error occured while annotating images: ", e)
 
 def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
-    logging.info("Generating drive coords...")
+    logging.info("Generating baseplate coords...")
     try:
         total_colony_counter = 0 
         dish_offset_index_counter = 0
@@ -375,15 +370,15 @@ def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS
                 dish_offset_index_counter = dish_offset_index_counter + 1
 
         # if total_colony_counter > 96:
-        #     logging.critical("Error generating drive coords: expected 96 colonies or less, got %s", total_colony_counter)
-        #     raise RuntimeError("Error generating drive coords: expected 96 colonies or less, got %s" % total_colony_counter)
+        #     logging.critical("Error generating baseplate coords: expected 96 colonies or less, got %s", total_colony_counter)
+        #     raise RuntimeError("Error generating baseplate coords: expected 96 colonies or less, got %s" % total_colony_counter)
 
         # else:
-            # logging.info("Drive coords generted for %s colonies", total_colony_counter)
+            # logging.info("baseplate coords generted for %s colonies", total_colony_counter)
             # return coords
 
-        logging.info("Drive coords generted for %s colonies", total_colony_counter)
+        logging.info("baseplate coords generted for %s colonies", total_colony_counter)
         return coords
     except Exception as e:
-        logging.critical("Error generating drive coords: ", e)
-        raise RuntimeError("Error generating drive coords: ", e)
+        logging.critical("Error generating baseplate coords: ", e)
+        raise RuntimeError("Error generating baseplate coords: ", e)
