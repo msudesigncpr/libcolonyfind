@@ -8,9 +8,6 @@ IMG_WIDTH = 3264
 
 CFU_WIN_PATH = '\\\\wsl.localhost/Debian/home/colon/OpenCFU' # DO NOT CHANGE YOU'LL BREAK SHIT
 
-CAM_X_OFFSETS = [69.3,  68.5, 182, 182, 297.5, 412]
-CAM_Y_OFFSETS = [52.5, -67,  52.5, -67, -67.5, -67]
-
 WELLS =['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12',
         'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10', 'B11', 'B12',
         'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12',
@@ -22,4 +19,3 @@ WELLS =['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12
 
 CAM_X = 162.307  #mm measured accross the x dir of camera
 CAM_Y = 121.73 #mm measured accross the y dir of camera
-
