@@ -1,8 +1,4 @@
-import CPRCV as cprcv
-import os
+from libcolonyfind.colony_finder import find_colonies
 
 if __name__ == "__main__":
-    # clear console with os
-    os.system('cls')
-
-    cprcv.find_colonies()
+    find_colonies()
