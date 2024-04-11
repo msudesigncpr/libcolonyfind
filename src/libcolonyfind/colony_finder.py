@@ -261,10 +261,12 @@ def remove_extra_colonies(coords):
                         counter_dict[file_name] = counter_dict.get(file_name, 0) + 1
                         if len(coord_list) == 0:
                             logging.info("All colonies in %s will be sampled from", file_name)
+        
+        coords = temp_dict
 
         logging.info("Removed %s colonies from each of the following files: %s", str(counter_dict.values())[12:-1], str(counter_dict.keys())[10:-1])
         logging.info("Extra colonies removed")
-        return temp_dict
+        return coords
     except Exception as e:
         logging.critical("Error removing extra colonies: ", e)
         raise RuntimeError("Error removing extra colonies: ", e)
