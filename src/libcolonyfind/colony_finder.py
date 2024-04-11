@@ -236,38 +236,35 @@ def distance_between_colonies(x0, y0, r0, x1, y1, r1):
 
 def remove_extra_colonies(coords):
     '''
-    removes colonies from dishes with more than 16 colonies until there are 96 colonies total
+    removes colonies from coordinate dict until there are 96 or fewer colonies
     '''
     try:
-        # logging.info(" ")
         logging.info("Removing extra colonies...")
 
         total_num_colonies = 0
-        counter_dict = {} # key is file name, value is number of times a colony has been removed from that file
-
-        logging.info("Removing extra colonies...")
         for _, coord_list in coords.items():
             total_num_colonies = total_num_colonies + len(coord_list)
-            logging.info("Total number of colonies detected: %s", total_num_colonies)
+        logging.info("Working with %s colonies", len(coord_list))
 
-        while total_num_colonies > 96:
-            random_file = random.choice(list(coords.keys()))
-            
-            # only remove colonies from dishes with more than 
-            if (len(coords[random_file]) > 16):
-                # Remove a random colony from the random file
-                random_colony = random.choice(coords[random_file])
-                coords[random_file].remove(random_colony)
-                counter_dict[random_file] = counter_dict.get(random_file, 0) + 1
-                
-                total_num_colonies = 0
-                for _, coord_list in coords.items():
-                    total_num_colonies = total_num_colonies + len(coord_list)
+        counter_dict = {} # key is file name, value is number of times a colony has been removed from that file
+        temp_dict = {file_name: [] for file_name in coords.keys()} # copy keys from coords to temp_dict but not the values
+        num_colonies_to_sample  = 0
+
+        if total_num_colonies > 96:
+            while num_colonies_to_sample < 96:
+                for file_name, coord_list in coords.items():
+                    if len(coord_list) > 0:
+                        random_sample = random.sample(coord_list, 1)
+                        temp_dict[file_name].append(random_sample)
+                        coord_list = [coord for coord in coord_list if coord not in random_sample]
+                        num_colonies_to_sample = num_colonies_to_sample + 1
+                        counter_dict[file_name] = counter_dict.get(file_name, 0) + 1
+                        if len(coord_list) == 0:
+                            logging.info("All colonies in %s will be sampled from", file_name)
 
         logging.info("Removed %s colonies from each of the following files: %s", str(counter_dict.values())[12:-1], str(counter_dict.keys())[10:-1])
         logging.info("Extra colonies removed")
-        # logging.info(" ")
-        return coords
+        return temp_dict
     except Exception as e:
         logging.critical("Error removing extra colonies: ", e)
         raise RuntimeError("Error removing extra colonies: ", e)
