@@ -253,7 +253,7 @@ def remove_extra_colonies(coords):
         if total_num_colonies > 96:
             while num_colonies_to_sample < 96:
                 for file_name, coord_list in coords.items():
-                    if len(coord_list) > 0:
+                    if len(coord_list) > 0: # TODO: if the coord is in the two petri dishes next to the bar and they are beyond some limit, don't sample them
                         random_sample = random.sample(coord_list, 1)
                         temp_dict[file_name].append(random_sample)
                         coord_list = [coord for coord in coord_list if coord not in random_sample]
@@ -273,7 +273,7 @@ def remove_extra_colonies(coords):
 
 
 
-def annotate_images(coords, annotation_image_input_path, annotation_output_path, wells = CONSTANTS.WELLS, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS):
+def annotate_images(coords, annotation_image_input_path, annotation_output_path, wells = CONSTANTS.WELLS, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, gsd_x = CONSTANTS.CAM_X, gsd_y = CONSTANTS.CAM_Y):
     '''
     takes the images in the image input path, and: draws circles around the colonies, writes the well the colony is destined for next to each colony
     saves annotated images to annotation output path
@@ -326,12 +326,13 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
                     # draw circles around colonies, and write colony number next to them
                     try:
                         cv2.circle(image, (x, y), int(r), (0, 0, 0), 2)
+                        cv2.rectangle(image, (int(x-0.5*gsd_x),int(y-0.5*gsd_y)), (int(x+0.5*gsd_x),int(y+0.5*gsd_y)), (0, 0, 0), 2) # FIXME
                         cv2.putText( image, str(colony_number), (int(x + 30), int(y - 30)), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 1) 
                     except Exception as e:
-                        logging.error("Error drawing stuff on and near colonies")
-                        raise RuntimeError("Error drawing stuff on and near colonies")
+                        logging.error("Error drawing annotations")
+                        raise RuntimeError("Error drawing annotations")
 
-            cv2.circle(image, (int(0.5*image_width),int(0.5*image_height)), int(petri_dish_roi * image_width), (0,255,0), 2)    # HACK:remove when xy coordinates are unfucked. shows where edges of petri dish should be
+            cv2.circle(image, (int(0.5*image_width),int(0.5*image_height)), int(petri_dish_roi * image_width), (0,255,0), 2)    
             annotated_images.extend(image)
 
 
