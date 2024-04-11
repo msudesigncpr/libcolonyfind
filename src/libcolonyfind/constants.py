@@ -17,5 +17,5 @@ WELLS =['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12
         'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9', 'G10', 'G11', 'G12',
         'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'H10', 'H11', 'H12']
 
-CAM_X = 162.307  #mm measured accross the x dir of camera
-CAM_Y = 121.73 #mm measured accross the y dir of camera
+CAM_X = 174.45
+CAM_Y = 125.84
