@@ -199,6 +199,8 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
                     # bool for if the main colony is a doublet (is too close to neighbor)
                     main_is_doublet = distance_between_colonies(main_colony_x, main_colony_y, main_colony_r, neighbor_colony_x, neighbor_colony_y, neighbor_colony_r) < min_colony_dist 
 
+                    
+
                     if (not neighbor_is_main) and main_is_doublet:
                         bad_colony = True
                         doublet_colony_counter = doublet_colony_counter + 1 
@@ -233,6 +235,17 @@ def distance_between_colonies(x0, y0, r0, x1, y1, r1):
     if distance > (r0 + r1):            
         return distance - (r0 + r1)
     else: return -1
+
+
+def baseplate_coord_transform(x, y, gsd_x = CONSTANTS.GSD_X, gsd_y = CONSTANTS.GSD_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT, cam_x = CONSTANTS.CAM_X):
+    center_x = 0.5 * img_width
+    center_y = 0.5 * img_height
+
+    x = ((x - center_x)/img_width) * gsd_x # FIXME THIS IS PROBABLY WRONG
+    y = ((y - center_y)/img_height) * gsd_y
+
+    return [x, y]
+
 
 def remove_extra_colonies(coords):
     '''
@@ -273,7 +286,7 @@ def remove_extra_colonies(coords):
 
 
 
-def annotate_images(coords, annotation_image_input_path, annotation_output_path, wells = CONSTANTS.WELLS, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, gsd_x = CONSTANTS.CAM_X, gsd_y = CONSTANTS.CAM_Y):
+def annotate_images(coords, annotation_image_input_path, annotation_output_path, wells = CONSTANTS.WELLS, image_height = CONSTANTS.IMG_HEIGHT, image_width = CONSTANTS.IMG_WIDTH, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, gsd_x = CONSTANTS.GSD_X, gsd_y = CONSTANTS.GSD_Y):
     '''
     takes the images in the image input path, and: draws circles around the colonies, writes the well the colony is destined for next to each colony
     saves annotated images to annotation output path
@@ -348,40 +361,30 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
         logging.critical("An error occured while annotating images: ", e)
         raise RuntimeError("An error occured while annotating images: ", e)
 
-def generate_baseplate_coords(coords, cam_x = CONSTANTS.CAM_X, cam_y = CONSTANTS.CAM_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT, wells = CONSTANTS.WELLS):
+def generate_baseplate_coords(coords, gsd_x = CONSTANTS.GSD_X, gsd_y = CONSTANTS.GSD_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT, wells = CONSTANTS.WELLS):
     logging.info("Generating baseplate coords...")
     try:
         total_colony_counter = 0 
-        dish_offset_index_counter = 0
         well_counter = 0
 
         for _, coord_list in coords.items():
                 for colony_coord in coord_list:
                     print(colony_coord)
 
-                    center_x = 0.5 * img_width
-                    center_y = 0.5 * img_height
-
-                    colony_coord[0] = ((colony_coord[0] - center_x)/img_width) * cam_x # FIXME THIS IS PROBABLY WRONG
-                    colony_coord[1] = ((colony_coord[1] - center_y)/img_height) * cam_y
-
                     colony_coord = colony_coord[:-1] # remove radius from colony coord
+                    colony_coord = baseplate_coord_transform(colony_coord[0], colony_coord[1], 0) # HACK: dish_offset_index is 0
 
                     print("Well: ", wells[well_counter], "for colony coords: ", colony_coord)
                     well_counter = well_counter + 1
 
-                dish_offset_index_counter = dish_offset_index_counter + 1
+        if total_colony_counter > 96:
+            logging.warning("Error generating baseplate coords: expected 96 colonies or less, got %s", total_colony_counter)
+            pass
 
-        # if total_colony_counter > 96:
-        #     logging.critical("Error generating baseplate coords: expected 96 colonies or less, got %s", total_colony_counter)
-        #     raise RuntimeError("Error generating baseplate coords: expected 96 colonies or less, got %s" % total_colony_counter)
+        else:
+            logging.info("baseplate coords generted for %s colonies", total_colony_counter)
+            return coords
 
-        # else:
-            # logging.info("baseplate coords generted for %s colonies", total_colony_counter)
-            # return coords
-
-        logging.info("baseplate coords generted for %s colonies", total_colony_counter)
-        return coords
     except Exception as e:
         logging.critical("Error generating baseplate coords: ", e)
         raise RuntimeError("Error generating baseplate coords: ", e)
