@@ -12,17 +12,9 @@ from libcolonyfind import constants as CONSTANTS
 
 # lines with HACK are the ones you should probably change after xy coords are unfucked
 
-# FIXME on ln 200. wrong coordinate calculation is taking place
 
-# TODO: Play with CFU options to make it better maybe------------------------------------------0%
-# TODO: (!) Fix path issues--------------------------------------------------------------------0%
-# TODO: Fix logging----------------------------------------------------------------------------80%
+# TODO: accept an array of image names
 # TODO: Fix error handling---------------------------------------------------------------------40%
-# TODO: Fix metadata creation------------------------------------------------------------------90ish%
-# TODO: (!!!) Do something other than create thousands of temporary .txt files.
-#       |----> CFU currently generates csvs, which are dumped into the project directory
-#              I tried to pipe them directly into stuff  without wsl mv but it didn't work, so
-#               TODO: fix opencfu csv handling 
 
 
 LOGLEVEL = logging.INFO
@@ -33,7 +25,7 @@ logging.basicConfig(
 )
 
 
-def find_colonies(raw_image_path, csv_out_path, annotated_image_output_path = None):
+def find_colonies(raw_image_path, csv_out_path, annotated_image_names = None, annotated_image_output_path = None):
     run_cfu(raw_image_path, csv_out_path)
     coords = parse_cfu_csv(csv_out_path)
     coords = remove_unsampleable_colonies(coords)
@@ -167,6 +159,9 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
 
         total_colonies_in_image = len(coord_list)    
         temp_coords[file_name] = []                                     # holds the coordinates of colonies that are sampleable
+        out_of_bounds_colony_counter = 0
+
+        petri_dish_counter = 0
         
 
         for main_colony_coords in coord_list:
@@ -199,9 +194,13 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
                     # bool for if the main colony is a doublet (is too close to neighbor)
                     main_is_doublet = distance_between_colonies(main_colony_x, main_colony_y, main_colony_r, neighbor_colony_x, neighbor_colony_y, neighbor_colony_r) < min_colony_dist 
 
-                    
+                    main_is_out_bounds = baseplate_coord_transform(main_colony_x, main_colony_y)[1] > 27.77
+                    print("Colony is out of bounds: ",baseplate_coord_transform(main_colony_x, main_colony_y)[1] > 27.77)
 
-                    if (not neighbor_is_main) and main_is_doublet:
+                    if main_is_out_bounds:
+                        bad_colony = True
+                        main_is_out_bounds_counter = main_is_out_bounds_counter + 1
+                    elif (not neighbor_is_main) and main_is_doublet:
                         bad_colony = True
                         doublet_colony_counter = doublet_colony_counter + 1 
                     
@@ -215,6 +214,7 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
 
         logging.info("TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s " , too_small_colony_counter, doublet_colony_counter, over_edge_colony_counter)
         logging.info("DETECTED:...........%s | BAD:............ %s | GOOD:....................%s", total_colonies_in_image, bad_colony_counter,  len(temp_coords[file_name]))
+        print("out of bounds counter:", out_of_bounds_colony_counter)
         # logging.info(" ")
 
     logging.info("Doublet removal complete. %s colonies can be sampled from!", good_colony_counter)
@@ -237,7 +237,10 @@ def distance_between_colonies(x0, y0, r0, x1, y1, r1):
     else: return -1
 
 
-def baseplate_coord_transform(x, y, gsd_x = CONSTANTS.GSD_X, gsd_y = CONSTANTS.GSD_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT, cam_x = CONSTANTS.CAM_X):
+def baseplate_coord_transform(x, y, gsd_x = CONSTANTS.GSD_X, gsd_y = CONSTANTS.GSD_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT):
+    '''
+    turns pixel coorinates to mm offsets from the center of the image
+    '''
     center_x = 0.5 * img_width
     center_y = 0.5 * img_height
 
@@ -361,7 +364,7 @@ def annotate_images(coords, annotation_image_input_path, annotation_output_path,
         logging.critical("An error occured while annotating images: ", e)
         raise RuntimeError("An error occured while annotating images: ", e)
 
-def generate_baseplate_coords(coords, gsd_x = CONSTANTS.GSD_X, gsd_y = CONSTANTS.GSD_Y, img_width = CONSTANTS.IMG_WIDTH, img_height = CONSTANTS.IMG_HEIGHT, wells = CONSTANTS.WELLS):
+def generate_baseplate_coords(coords, wells = CONSTANTS.WELLS):
     logging.info("Generating baseplate coords...")
     try:
         total_colony_counter = 0 
@@ -372,7 +375,7 @@ def generate_baseplate_coords(coords, gsd_x = CONSTANTS.GSD_X, gsd_y = CONSTANTS
                     print(colony_coord)
 
                     colony_coord = colony_coord[:-1] # remove radius from colony coord
-                    colony_coord = baseplate_coord_transform(colony_coord[0], colony_coord[1], 0) # HACK: dish_offset_index is 0
+                    colony_coord = baseplate_coord_transform(colony_coord[0], colony_coord[1])
 
                     print("Well: ", wells[well_counter], "for colony coords: ", colony_coord)
                     well_counter = well_counter + 1
