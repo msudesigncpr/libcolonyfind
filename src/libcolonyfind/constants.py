@@ -17,5 +17,9 @@ WELLS =['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12
         'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9', 'G10', 'G11', 'G12',
         'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'H10', 'H11', 'H12']
 
-CAM_X = 174.45
-CAM_Y = 125.84
+# effectivley just conversion factors for going from mmm to pixels
+GSD_X = 174.45 # mm per pixel in the x direction
+GSD_Y = 125.84 # mm per pixel in the y direction
+
+
+# MIN_COLONY_RADIUS = 1/125.84 * (1/IMG_WIDTH)
