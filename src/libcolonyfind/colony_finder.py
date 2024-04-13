@@ -194,7 +194,7 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
                     # bool for if the main colony is a doublet (is too close to neighbor)
                     main_is_doublet = distance_between_colonies(main_colony_x, main_colony_y, main_colony_r, neighbor_colony_x, neighbor_colony_y, neighbor_colony_r) < min_colony_dist 
 
-                    main_is_out_bounds = baseplate_coord_transform(main_colony_x, main_colony_y)[1] > 27.77
+                    main_is_out_bounds = (baseplate_coord_transform(main_colony_x, main_colony_y)[1] < -27.77) and (petri_dish_counter == 0 or petri_dish_counter == 1) # TODO: Make petri dish counter numbers constants
                     print("Colony is out of bounds: ",baseplate_coord_transform(main_colony_x, main_colony_y)[1] > 27.77)
 
                     if main_is_out_bounds:
@@ -215,7 +215,6 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
         logging.info("TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s " , too_small_colony_counter, doublet_colony_counter, over_edge_colony_counter)
         logging.info("DETECTED:...........%s | BAD:............ %s | GOOD:....................%s", total_colonies_in_image, bad_colony_counter,  len(temp_coords[file_name]))
         print("out of bounds counter:", out_of_bounds_colony_counter)
-        # logging.info(" ")
 
     logging.info("Doublet removal complete. %s colonies can be sampled from!", good_colony_counter)
     # logging.info(" ")
