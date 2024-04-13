@@ -2,7 +2,7 @@
 
 This is a library for the automatic detection of colonies for the colony-picking robot 
 MSU senior design project. This library provides a single function `find_colonies()` that 
-returns coordinates to colonies within an image that are valid for sampling.
+returns coordinates to colonies within an image valid for sampling.
 See the [documentation][apidocs] for more information. 
 
 Along with detecting colonies, this library also handles:
