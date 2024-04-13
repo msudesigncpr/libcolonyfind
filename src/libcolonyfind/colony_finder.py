@@ -46,10 +46,6 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
     cfu_csv_win_dump_path = Path(csv_out_path).resolve()
     cfu_csv_wsl_dump_path = cfu_csv_win_dump_path.as_posix().replace("C:", "/mnt/c")
 
-    # print(images_for_cfu_win_path)
-    # print(images_for_cfu_wsl_path)
-    # print(cfu_csv_win_dump_path)
-    # print(cfu_csv_wsl_dump_path)
     init_dir = os.getcwd()
 
     try:
@@ -83,7 +79,7 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
         raise RuntimeError("CFU processing failed, terminating...")
     os.chdir(init_dir)
 
-def parse_cfu_csv(csv_path): 
+def parse_cfu_csv(csv_path, gsd_x = CONSTANTS.GSD_X): 
     """
     openCFU generates .csv files, which are moved to https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L224
     This function reads the .csv files, extracts the colony coordinates returns a dict with the file name as the key, and the value as a list of coordinates for each colony in the image
@@ -118,16 +114,15 @@ def parse_cfu_csv(csv_path):
                     y = float(row[2])
                     r = float(row[7])
 
-                    #TODO translate to mm from center immediately 
+                    mm_coords = baseplate_coord_transform(x, y)
+                    mm_coords.extend([r*gsd_x])
 
-
-                    temp.append([x, y, r])
+                    temp.append(mm_coords)
                     
             coords[base_file_name] = temp
             offset_index = offset_index + 1
 
         logging.info("CFU CSV procecssing complete")
-        # logging.info(" ")
         return coords
 
     except Exception as e:
@@ -165,9 +160,9 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
         for main_colony_coords in coord_list:
             bad_colony = False
 
-            main_colony_x = float(main_colony_coords[0]) / img_width
-            main_colony_y = float(main_colony_coords[1]) / img_height
-            main_colony_r = float(main_colony_coords[2]) / img_width
+            main_colony_x = float(main_colony_coords[0])
+            main_colony_y = float(main_colony_coords[1])
+            main_colony_r = float(main_colony_coords[2])
 
             if distance_from_center(main_colony_x, main_colony_y) > petri_dish_roi: 
                 bad_colony = True
@@ -177,9 +172,9 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
                 too_small_colony_counter = too_small_colony_counter + 1
             else:
                 for neighbor_colony_coords in coord_list: # mmm O(n^2). great.
-                    neighbor_colony_x = float(neighbor_colony_coords[0]) / img_width
-                    neighbor_colony_y = float(neighbor_colony_coords[1]) / img_height
-                    neighbor_colony_r = float(neighbor_colony_coords[2]) / img_width
+                    neighbor_colony_x = float(neighbor_colony_coords[0])
+                    neighbor_colony_y = float(neighbor_colony_coords[1])
+                    neighbor_colony_r = float(neighbor_colony_coords[2])
                     
                     
                     # bool for if the current neighbor is the main colony   
@@ -192,7 +187,7 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
 
                     if main_is_out_bounds:
                         bad_colony = True
-                        main_is_out_bounds_counter = main_is_out_bounds_counter + 1
+                        out_of_bounds_colony_counter = out_of_bounds_colony_counter + 1
                     elif (not neighbor_is_main) and main_is_doublet:
                         bad_colony = True
                         doublet_colony_counter = doublet_colony_counter + 1 
