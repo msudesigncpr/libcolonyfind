@@ -27,11 +27,10 @@ pip install "git+https://github.com/msudesigncpr/libcolonyfind.git"
 
 > <font color="red">WARNING</font>
 >
-> OpenCFU running on WSL is necesary for this library to work.
-> libcolonyfind WILL NOT WORK if this is not the case!
+> [OpenCFU](https://github.com/msudesigncpr/OpenCFU/tree/master) running on WSL is necesary for this library to work.
 > The path to this instance of OpenCFU will need to be specified in
-> [constants.py](src/libcolonyfind/constants.py)
-TODO: fork https://github.com/qgeissmann/OpenCFU and link here
+> [constants.py](https://github.com/msudesigncpr/libcolonyfind/blob/5507e8dfbcfe86470950627f8870ba7f2ad7b9e1/src/libcolonyfind/constants.py#L31-L34)
+
 
 ## Minimal Usage Example
 
