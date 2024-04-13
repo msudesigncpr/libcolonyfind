@@ -2,17 +2,16 @@
 
 This is a library for the automatic detection of colonies for the colony-picking robot 
 MSU senior design project. This library provides a single function `find_colonies()` that 
-returns a dict containing coordinates to colonies that are valid for sampling. If a path 
-for annotated images to be saved to is supplied, annotated images will be created and saved. 
-See the apidocs for more information. 
+returns coordinates to colonies within an image that are valid for sampling.
+See the [documentation][apidocs] for more information. 
 
 Along with detecting colonies, this library also handles:
  - The creation of annotated images
  - The removal of "extra" colonies
  - The removal of out-of-bounds colonies
+ - Translation of pixel coordinates to mm offsets
 
-apidocs are coming...
-api docs for coord system info
+[apidocs]: https://msudesigncpr.github.io/libcolonyfind/libcolonyfind/colony_finder.html
 
 ## Getting Started
 
@@ -26,8 +25,7 @@ python -m venv .venv
 pip install "git+https://github.com/msudesigncpr/libcolonyfind.git"
 ```
 
-> **WARNING**
->
+> <font color="red">WARNING</font>
 >
 > OpenCFU running on WSL is necesary for this library to work.
 > libcolonyfind WILL NOT WORK if this is not the case!
@@ -37,12 +35,13 @@ TODO: fork https://github.com/qgeissmann/OpenCFU and link here
 
 ## Minimal Usage Example
 
-To get started quickly, the following code will 
+To get started quickly, the following code will ingest 
 
 ```python
 from libcolonyfind import find_colonies
 
 def main():
+        raw_image_path = "./raw_images" # Folder containing images of petri dishes
         output_dir = "./output"      
         
         csv_out_dir = Path(output_dir / "02_csv_data")     # OpenCFU finds colonies within images, those coords are placed here
@@ -50,7 +49,7 @@ def main():
         csv_out_dir.mkdir()
         annotated_image_dir.mkdir()
         raw_baseplate_coords_dict = find_colonies(
-            self.raw_image_path, self.csv_out_dir, self.annotated_image_dir
+            raw_image_path, csv_out_dir, annotated_image_dir
         )  # saves annotated images to annotated_image_dir, returns coords to colonies (api docs for coord system info)
 
 if __name__ == "__main__":
