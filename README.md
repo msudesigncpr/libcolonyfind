@@ -34,7 +34,9 @@ pip install "git+https://github.com/msudesigncpr/libcolonyfind.git"
 
 ## Minimal Usage Example
 
-To get started quickly, the following code will ingest 
+To get started quickly, the following code will ingest images and spit out coords to 96 (or less) colonies in mm offsets from the center of those images.
+In the CPR process control code, this happens [here](https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L225).
+
 
 ```python
 from libcolonyfind import find_colonies
