@@ -26,7 +26,9 @@ python -m venv .venv
 pip install "git+https://github.com/msudesigncpr/libcolonyfind.git"
 ```
 
-> [!warning] **WARNING**
+> **WARNING**
+>
+>
 > OpenCFU running on WSL is necesary for this library to work.
 > libcolonyfind WILL NOT WORK if this is not the case!
 > The path to this instance of OpenCFU will need to be specified in
