@@ -36,8 +36,10 @@ def find_colonies(raw_image_path, csv_out_path, annotated_image_names = None, an
     return baseplate_coords
 
 def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH):
-    """uses WSL to run OpenCFU on images in img_folder_path
-    OpenCFU generates .csv files, which are moved to project directory (for now, see TODO above)"""
+    """
+    uses WSL to run the instance of OpenCFU at CONSTANTS.CFU_WIN_PATH on images in img_folder_path
+    OpenCFU generates .csv files, dumps them in `csv_out_path`
+    """
     
     images_for_cfu_win_path = Path(raw_image_path).resolve()
     images_for_cfu_wsl_path = images_for_cfu_win_path.as_posix().replace("C:", "/mnt/c")
@@ -81,9 +83,9 @@ def run_cfu(raw_image_path, csv_out_path, cfu_win_path = CONSTANTS.CFU_WIN_PATH)
         raise RuntimeError("CFU processing failed, terminating...")
     os.chdir(init_dir)
 
-def parse_cfu_csv(csv_path):
+def parse_cfu_csv(csv_path): 
     """
-    openCFU generates .csv files, which are moved to project directory (for now, see TODO above)
+    openCFU generates .csv files, which are moved to https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L224
     This function reads the .csv files, extracts the colony coordinates returns a dict with the file name as the key, and the value as a list of coordinates for each colony in the image
     for ex:
     coords = {
@@ -92,7 +94,6 @@ def parse_cfu_csv(csv_path):
                 'file3': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]]
     }
     """
-    # logging.info(" ")
     logging.info("Parsing CFU CSVs...")
 
     coords = {}
@@ -116,6 +117,10 @@ def parse_cfu_csv(csv_path):
                     x = float(row[1])
                     y = float(row[2])
                     r = float(row[7])
+
+                    #TODO translate to mm from center immediately 
+
+
                     temp.append([x, y, r])
                     
             coords[base_file_name] = temp
@@ -131,22 +136,15 @@ def parse_cfu_csv(csv_path):
 
 def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_ROI, min_colony_dist = CONSTANTS.MIN_COLONY_DISTANCE, min_colony_radius = CONSTANTS.MIN_COLONY_RADIUS, img_height = CONSTANTS.IMG_HEIGHT, img_width = CONSTANTS.IMG_WIDTH):
     '''
-    Take in a dict with coords, and: remove colonies that are too close to the edge of the petri dish, too small, or too close to other colonies
-    temp_coords is a dict with the same keys as coords, but the values are lists of coordinates for colonies that are sampleable
+    Processes coord dict and removes colonies that are:
+    - Too close to the edge of the petri dish (CONSTANTS.PETRI_DISH_ROI)
+    - Too close together (CONSTANTS.MIN_COLONY_DISTANCE)
+    - Too small (CONSTANTS.MIN_COLONY_RADIUS)
+    - Too close to the x-axis origin to be sampled
+        - The camera mount sticks out towards the negative-x direction. If there are colonies on the edge of the petri dish nearest to the x-axis origin, they cannot be picked, as the camera would be obliterated by the 8020 frame. 
     '''
-    # logging.info(" ")
     logging.info("Removing unsampleable colonies...")
 
-    # the dictionary has the file name as the key, and the value is a set of coordinates to each colony in the iamge
-    # 
-    # each sublist is a coordinate set for a colony
-    # ex
-    # coords = {
-    #           'file_name" : coor_set
-    #           'file1': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]],
-    #           'file2': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]],
-    #           'file3': [[x1, y1, r1], [x2, y2, r2], [x3, y3, r3]]
-    #          }
     temp_coords = {}
     good_colony_counter = 0
 
@@ -171,11 +169,6 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
             main_colony_y = float(main_colony_coords[1]) / img_height
             main_colony_r = float(main_colony_coords[2]) / img_width
 
-            """ 
-            check if the colony is in the petri dish
-            if it is, check if it is big enough
-            if it is, check if there are any nearby colonies that would make it un-sampleable
-            """
             if distance_from_center(main_colony_x, main_colony_y) > petri_dish_roi: 
                 bad_colony = True
                 over_edge_colony_counter = over_edge_colony_counter + 1 
