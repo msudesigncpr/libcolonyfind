@@ -190,7 +190,8 @@ def remove_unsampleable_colonies(coords, petri_dish_roi = CONSTANTS.PETRI_DISH_R
                         out_of_bounds_colony_counter = out_of_bounds_colony_counter + 1
                     elif (not neighbor_is_main) and main_is_doublet:
                         bad_colony = True
-                        doublet_colony_counter = doublet_colony_counter + 1 
+                        doublet_colony_counter = doublet_colony_counter + 1
+                        
                     
 
             if (not bad_colony) and (not temp_coords[file_name].__contains__(main_colony_coords)):
