@@ -1,11 +1,5 @@
 # libcolonyfind
 
-This is a library for controlling the CMMO-ST drive controllers on the
-colony-picking robot design project. It provides a `DriveManager` class which
-maintains Modbus connections with each of the drives and provides convenience
-methods for controlling them. See the [documentation][apidocs] for more
-information.
-
 This is a library for the automatic detection of colonies for the colony-picking robot 
 MSU senior design project. This library provides a single function `find_colonies()` that 
 returns a dict containing coordinates to colonies that are valid for sampling. If a path 
