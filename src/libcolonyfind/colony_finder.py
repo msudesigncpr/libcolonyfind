@@ -10,12 +10,6 @@ from libcolonyfind import constants as CONSTANTS
 # TODO: accept an array of image names
 
 # TODO pass thru init
-LOGLEVEL = logging.INFO
-logging.basicConfig(
-    format="%(asctime)s: %(message)s",
-    level=LOGLEVEL,
-    datefmt="%H:%M:%S",
-)
 
 
 class ColonyFinder:
@@ -35,6 +29,12 @@ class ColonyFinder:
         self.raw_coords = {}
         self.valid_coords = {}
         self.final_coords = {}
+
+        logging.basicConfig(
+            format="%(asctime)s: %(message)s",
+            level=logging.INFO,
+            datefmt="%H:%M:%S",
+        )
 
     def run_full_proc(self):
         self.run_cfu(self.raw_image_path, self.csv_out_path)
