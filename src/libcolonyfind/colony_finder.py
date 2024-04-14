@@ -50,15 +50,15 @@ class ColonyFinder:
         return baseplate_coords
 
     def run_cfu(
-        self, raw_image_path, csv_out_path, cfu_win_path=CONSTANTS.CFU_WIN_PATH
+        self, raw_image_path, csv_out_path, cfu_path=CONSTANTS.CFU_PATH
     ):
         """
-        uses WSL to run the instance of OpenCFU at CONSTANTS.CFU_WIN_PATH on images in img_folder_path
+        uses WSL to run the instance of OpenCFU at CONSTANTS.CFU_PATH on images in img_folder_path
         OpenCFU generates .csv files, dumps them in `csv_out_path`
         """
 
-        images_for_cfu_win_path = Path(raw_image_path).resolve()
-        images_for_cfu_wsl_path = images_for_cfu_win_path.as_posix().replace(
+        images_for_cfu_path = Path(raw_image_path).resolve()
+        images_for_cfu_wsl_path = images_for_cfu_path.as_posix().replace(
             "C:", "/mnt/c"
         )
         cfu_csv_win_dump_path = Path(csv_out_path).resolve()
@@ -68,13 +68,13 @@ class ColonyFinder:
 
         try:
             logging.info("Moving to OpenCFU dir...")
-            os.chdir(WindowsPath(cfu_win_path))
+            os.chdir(WindowsPath(cfu_path))
         except:
             logging.critical("Error changing directory")
             raise RuntimeError("Error changing directory")
 
         try:
-            for image in os.listdir(images_for_cfu_win_path):
+            for image in os.listdir(images_for_cfu_wsl_path):
                 base_image_name = os.path.splitext(os.path.basename(image))[0]
                 logging.info("Processing image %s", base_image_name)
 
