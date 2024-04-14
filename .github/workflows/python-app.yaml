@@ -42,6 +42,7 @@ jobs:
             autoreconf -i
             ./configure --without-gui
             automake --add-missing
+            make 
             ls
             ./opencfu -h     
 
