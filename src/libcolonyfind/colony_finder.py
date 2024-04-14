@@ -49,18 +49,14 @@ class ColonyFinder:
         baseplate_coords = self.generate_baseplate_coords(coords)
         return baseplate_coords
 
-    def run_cfu(
-        self, raw_image_path, csv_out_path, cfu_path=CONSTANTS.CFU_PATH
-    ):
+    def run_cfu(self, raw_image_path, csv_out_path, cfu_path=CONSTANTS.CFU_PATH):
         """
         uses WSL to run the instance of OpenCFU at CONSTANTS.CFU_PATH on images in img_folder_path
         OpenCFU generates .csv files, dumps them in `csv_out_path`
         """
 
         images_for_cfu_path = Path(raw_image_path).resolve()
-        images_for_cfu_wsl_path = images_for_cfu_path.as_posix().replace(
-            "C:", "/mnt/c"
-        )
+        images_for_cfu_wsl_path = images_for_cfu_path.as_posix().replace("C:", "/mnt/c")
         cfu_csv_win_dump_path = Path(csv_out_path).resolve()
         cfu_csv_wsl_dump_path = cfu_csv_win_dump_path.as_posix().replace("C:", "/mnt/c")
 

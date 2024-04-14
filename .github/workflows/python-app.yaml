@@ -38,6 +38,9 @@ jobs:
       - name: Install libcolonyfind
         run: pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
 
+      - name: Clone libcolonyfind
+        run: git clone https://github.com/msudesigncpr/libcolonyfind.git
+
 
       - name: Build OpenCFU
         run: |
@@ -47,8 +50,11 @@ jobs:
             ./configure --without-gui
             automake --add-missing
             make -Wno-misleading-indentation 
-            pwd
             ./opencfu -h     
+
+      - name: Run OpenCFU
+        run: |
+            ./opencfu -i ../libcolonyfind/4-5-images/p0.jpg 
 
       - name: Check versions
         run: pip freeze
