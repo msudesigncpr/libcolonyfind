@@ -36,7 +36,10 @@ jobs:
             sudo apt update && sudo apt install libopencv-dev     
   
       - name: Install libcolonyfind
-        run: pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
+        run: | 
+          mkdir libcolonyfind && cd libcolonyfind
+          pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
+          cd ..
 
       - name: Clone libcolonyfind
         run: |

@@ -144,7 +144,7 @@ class ColonyFinder:
                     rows = list(reader)
                     data = rows[1:]
 
-                    # loop thru every row in the csv file, extract the x, y, and r values, and throw them in the coords dict
+                    # loop thru every row in the csv file, extract the x, y, and r values, translate to mm offset from center, and throw them in the coords dict
                     for row in data:
                         x = float(row[1])
                         y = float(row[2])
@@ -241,12 +241,7 @@ class ColonyFinder:
                             < min_colony_dist
                         )
 
-                        main_is_out_bounds = (
-                            self.baseplate_coord_transform(
-                                main_colony_x, main_colony_y
-                            )[1]
-                            < -27.77
-                        ) and (
+                        main_is_out_bounds = (main_colony_y < -27.77) and (
                             petri_dish_counter == 0 or petri_dish_counter == 1
                         )  # TODO: Make petri dish counter numbers constants
                         print(
