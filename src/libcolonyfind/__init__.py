@@ -1,1 +1,3 @@
-from libcolonyfind.colony_finder import ColonyFinder
+from libcolonyfind.colony_finder import (
+    ColonyFinder,
+)

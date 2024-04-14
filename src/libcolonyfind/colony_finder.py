@@ -22,7 +22,6 @@ class ColonyFinder:
         self.raw_image_path = raw_image_path
         self.csv_out_path = csv_out_path
 
-
         self.images = images
         """
         array of images to annotate. If None, will not annotate images
@@ -204,7 +203,6 @@ class ColonyFinder:
             doublet_colony_counter = 0
             out_of_bounds_colony_counter = 0
 
-
             total_colonies_in_image = len(coord_list)
             temp_coords[image_name] = []  # holds the coordinates of colonies that are valid
 
@@ -216,7 +214,6 @@ class ColonyFinder:
                 main_colony_x = float(main_colony_coords[0])
                 main_colony_y = float(main_colony_coords[1])
                 main_colony_r = float(main_colony_coords[2])
-
 
                 if self.distance_from_center(main_colony_x, main_colony_y) > petri_dish_roi:  # TODO fix
                     bad_colony = True
@@ -264,7 +261,7 @@ class ColonyFinder:
                     bad_colony_counter = bad_colony_counter + 1
 
             logging.info(
-                "TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s | OOB:....................%s", 
+                "TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s | OOB:....................%s",
                 too_small_colony_counter,
                 doublet_colony_counter,
                 over_edge_colony_counter,
@@ -347,47 +344,43 @@ class ColonyFinder:
         """
         removes colonies from coordinate dict until there are 96 or fewer colonies
         """
+        logging.info("Removing extra colonies...")
         try:
-            logging.info("Removing extra colonies...")
-
+            num_colonies_to_sample = 0
             total_num_colonies = 0
+            counter_dict = {}
+
             for _, coord_list in coords.items():
                 total_num_colonies = total_num_colonies + len(coord_list)
-            logging.info("Working with %s colonies", len(coord_list))
+            logging.info("Working with %s colonies", total_num_colonies)
 
-            counter_dict = {}  # key is file name, value is number of times a colony has been removed from that file
-            temp_dict = {
-                image_name: [] for image_name in coords.keys()
-            }  # copy keys from coords to temp_dict but not the values
-            num_colonies_to_sample = 0
+            # copy keys from coords to temp_dict but not the values
+            temp_dict = {image_name: [] for image_name in coords.keys()}
 
-            # if total_num_colonies > 96:
-            #     while num_colonies_to_sample < 96: #FIXME HACK TODO: change to 96
-            #         for image_name, coord_list in coords.items():
-            #             if (
-            #                 len(coord_list) > 0
-            #             ):  # TODO: if the coord is in the two petri dishes next to the bar and they are beyond some limit, don't sample them
-            #                 random_sample = random.sample(coord_list, 1)
-            #                 temp_dict[image_name].extend(random_sample)
-            #                 coord_list = [coord for coord in coord_list if coord not in random_sample]
-            #                 num_colonies_to_sample = num_colonies_to_sample + 1
-            #                 counter_dict[image_name] = counter_dict.get(image_name, 0) + 1
-            #                 if len(coord_list) == 0:
-            #                     logging.info(
-            #                         "All colonies in %s will be sampled from",
-            #                         image_name,
-            #                     )
-                    
-            #     coords = temp_dict
-            
-            #     logging.info(
-            #         "Removed %s colonies from each of the following files: %s",
-            #         str(counter_dict.values())[12:-1],
-            #         str(counter_dict.keys())[10:-1],
-            #     )
-            #     logging.info("Extra colonies removed")
-            # else:
-                # logging.info("No extra colonies to remove. Returning original coords.")
+            if total_num_colonies > 96:
+                while num_colonies_to_sample < 96:
+                    for image_name, coord_list in coords.items():
+                        if len(coord_list) > 0:
+                            random_sample = random.sample(coord_list, 1)
+                            temp_dict[image_name].extend(random_sample)
+                            coord_list = [coord for coord in coord_list if coord not in random_sample]
+                            num_colonies_to_sample = num_colonies_to_sample + 1
+                            counter_dict[image_name] = counter_dict.get(image_name, 0) + 1
+                            if len(coord_list) == 0:
+                                logging.info(
+                                    "All colonies in %s will be sampled from",
+                                    image_name,
+                                )
+                coords = temp_dict
+
+                logging.info(
+                    "%s samples come from the following files: %s",
+                    str(counter_dict.values())[12:-1],
+                    str(counter_dict.keys())[10:-1],
+                )
+                logging.info("Extra colonies removed")
+            else:
+                logging.info("No extra colonies to remove. Returning original coords.")
             return coords
 
         except Exception as e:
@@ -423,16 +416,15 @@ class ColonyFinder:
                 image = images[index]
 
                 if len(coord_list) > 0:
-                    for colony_coord in coord_list:
+                    for index, colony_coord in enumerate(coord_list):
                         try:
                             x = colony_coord[0]
                             y = colony_coord[1]
                             r = colony_coord[2]
                             x, y, r = map(int, self.inv_baseplate_coord_transform(x, y, r))
 
-                            if well_number_index_counter < 96:
+                            if index < 96:
                                 colony_number = wells[well_number_index_counter]
-                                well_number_index_counter = well_number_index_counter + 1
                             else:
                                 logging.error(
                                     "Well number index counter exceeded 96. Please remove extra colonies before beginning sampling."
@@ -446,7 +438,13 @@ class ColonyFinder:
                         # draw circles around colonies, and write colony number next to them
                         try:
                             cv2.circle(image, (x, y), int(r), (0, 0, 0), 2)
-                            cv2.circle(image, (x, y), int(CONSTANTS.MIN_COLONY_DISTANCE * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)), (0, 0, 255), 1)
+                            cv2.circle(
+                                image,
+                                (x, y),
+                                int(CONSTANTS.MIN_COLONY_DISTANCE * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)),
+                                (0, 0, 255),
+                                1,
+                            )
                             cv2.putText(
                                 image,
                                 str(colony_number),
@@ -470,9 +468,10 @@ class ColonyFinder:
 
                 ylim_row = int(CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_HEIGHT / CONSTANTS.GSD_Y))
                 ylim_row = int(ylim_row + (image_height / 2))
-                cv2.line( image, (0, ylim_row), (CONSTANTS.IMG_WIDTH, ylim_row), (0, 255, 0), 2) 
+                cv2.line(image, (0, ylim_row), (CONSTANTS.IMG_WIDTH, ylim_row), (0, 255, 0), 2)
                 annotated_images.extend(image)
 
+                logging.info("Annotations for %s with %s colonies complete", image_name, len(coord_list))
 
             logging.info("Annotated image creation complete")
 
@@ -481,5 +480,3 @@ class ColonyFinder:
         except Exception as e:
             logging.critical("An error occured while annotating images: ", e)
             raise RuntimeError("An error occured while annotating images: ", e)
-
-
