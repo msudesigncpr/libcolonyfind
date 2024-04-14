@@ -31,9 +31,9 @@ jobs:
     #         python -m pip install --upgrade pip
     #         pip install pytest
 
-    #   - name: Install opencv2
-    #     run: |
-    #         sudo apt update && sudo apt install libopencv-dev     
+      - name: Install opencv2
+        run: |
+            sudo apt update && sudo apt install libopencv-dev     
 
       - name: Build OpenCFU
         run: |
