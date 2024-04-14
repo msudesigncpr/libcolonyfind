@@ -17,17 +17,19 @@ class ColonyFinder:
         self,
         raw_image_path,
         csv_out_path,
-        images, 
+        images,
     ):
         self.raw_image_path = raw_image_path
         self.csv_out_path = csv_out_path
 
-        """
-        array of image names to annotate
-        """
+
         self.images = images
         """
         array of images to annotate. If None, will not annotate images
+        """
+        self.annot_images = []
+        """
+        array of annotated images
         """
 
         self.raw_coords = {}
@@ -47,16 +49,16 @@ class ColonyFinder:
         self.final_coords = self.remove_extra_colonies(self.valid_coords)
 
         if self.images is not None:
-            self.images = self.annotate_images(
-                self.final_coords, self.images,
+            self.annot_images = self.annotate_images(
+                self.final_coords,
+                self.images,
             )
 
     def get_annot_images(self):
         return self.images
-    
+
     def get_coords(self):
         return self.final_coords
-        
 
     def run_cfu(self, raw_image_path, csv_out_path, cfu_path=CONSTANTS.CFU_PATH):
         """
@@ -89,8 +91,6 @@ class ColonyFinder:
                 cfu_coord_wsl_path = (
                     cfu_csv_wsl_dump_path + "/" + base_image_name + ".csv"
                 )  # where cfu will place coords to colonies it finds (ex /mnt/c/Users/colon/Downloads/GUI/src/cfu_coords/dish_0.csv)
-                print(cfu_image_wsl_path)
-                print(cfu_coord_wsl_path)
                 try:
                     # run cfu on images and move resultant coords to csv dumppath
                     subprocess.run(
@@ -120,7 +120,7 @@ class ColonyFinder:
         openCFU generates .csv files, which are moved to https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L224
         This function reads the .csv files, extracts the colony coordinates returns a dict with the file name as the key, and the value as a list of coordinates for each colony in the image
         These coords are in mm offsets from the center of the image. This is done using the baseplate_coord_transform function
-        
+
         for ex:
 
         coords = {
@@ -162,7 +162,7 @@ class ColonyFinder:
                         r = float(row[7])
 
                         mm_coords = self.baseplate_coord_transform(x, y, r)
- 
+
                         temp.append(mm_coords)
 
                 coords[base_image_name] = temp
@@ -197,19 +197,16 @@ class ColonyFinder:
         good_colony_counter = 0
 
         for image_name, coord_list in coords.items():
-            logging.info(
-                "----------Processing coords for image %s----------", image_name
-            )
+            logging.info("----------Processing coords for image %s----------", image_name)
             bad_colony_counter = 0
             too_small_colony_counter = 0
             over_edge_colony_counter = 0
             doublet_colony_counter = 0
+            out_of_bounds_colony_counter = 0
+
 
             total_colonies_in_image = len(coord_list)
-            temp_coords[image_name] = (
-                []
-            )  # holds the coordinates of colonies that are valid
-            out_of_bounds_colony_counter = 0
+            temp_coords[image_name] = []  # holds the coordinates of colonies that are valid
 
             petri_dish_counter = 0
 
@@ -220,12 +217,11 @@ class ColonyFinder:
                 main_colony_y = float(main_colony_coords[1])
                 main_colony_r = float(main_colony_coords[2])
 
-                if (
-                    self.distance_from_center(main_colony_x, main_colony_y) # TODO fix
-                    > petri_dish_roi
-                ):
+
+                if self.distance_from_center(main_colony_x, main_colony_y) > petri_dish_roi:  # TODO fix
                     bad_colony = True
                     over_edge_colony_counter = over_edge_colony_counter + 1
+
                 elif main_colony_r < min_colony_radius:
                     bad_colony = True
                     too_small_colony_counter = too_small_colony_counter + 1
@@ -250,26 +246,17 @@ class ColonyFinder:
                             < min_colony_dist
                         )
 
-                        main_is_out_bounds = (main_colony_y < x_limit_min) and (
-                            petri_dish_counter in {0, 1}
-                        )  
-                        print(
-                            "Colony is out of bounds: ",
-                            main_colony_x
-                        )
+                        main_is_out_bounds = (main_colony_y < x_limit_min) and (petri_dish_counter in {0, 1})
 
-                        if main_is_out_bounds:
-                            bad_colony = True
-                            out_of_bounds_colony_counter = (
-                                out_of_bounds_colony_counter + 1
-                            )
-                        elif (not neighbor_is_main) and main_is_doublet:
+                        if (not neighbor_is_main) and main_is_doublet:
                             bad_colony = True
                             doublet_colony_counter = doublet_colony_counter + 1
 
-                if (not bad_colony) and (
-                    not temp_coords[image_name].__contains__(main_colony_coords)
-                ):
+                        elif (not neighbor_is_main) and main_is_out_bounds:
+                            bad_colony = True
+                            out_of_bounds_colony_counter = out_of_bounds_colony_counter + 1
+
+                if (not bad_colony) and (not temp_coords[image_name].__contains__(main_colony_coords)):
                     temp_coords[image_name].append(main_colony_coords)
                     good_colony_counter = good_colony_counter + 1
 
@@ -277,24 +264,23 @@ class ColonyFinder:
                     bad_colony_counter = bad_colony_counter + 1
 
             logging.info(
-                "TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s ",
+                "TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s | OOB:....................%s", 
                 too_small_colony_counter,
                 doublet_colony_counter,
                 over_edge_colony_counter,
+                out_of_bounds_colony_counter,
             )
             logging.info(
-                "DETECTED:...........%s | BAD:............ %s | GOOD:....................%s",
+                "DETECTED:...........%s | REMOVED:............ %s | REMAIN:....................%s",
                 total_colonies_in_image,
                 bad_colony_counter,
                 len(temp_coords[image_name]),
             )
-            print("out of bounds counter:", out_of_bounds_colony_counter)
 
         logging.info(
-            "Doublet removal complete. %s colonies can be sampled from!",
+            "Invalid colony removal complete. %s colonies can be sampled from!",
             good_colony_counter,
         )
-        # logging.info(" ")
         return temp_coords
 
     def distance_from_center(self, x0, y0):
@@ -329,12 +315,11 @@ class ColonyFinder:
         center_x = 0.5 * img_width
         center_y = 0.5 * img_height
 
-        x = ((x - center_x) / img_width) * gsd_x 
+        x = ((x - center_x) / img_width) * gsd_x
         y = ((y - center_y) / img_height) * gsd_y
-        r = r * (gsd_x/img_width)
+        r = r * (gsd_x / img_width)
 
         return [x, y, r]
-    
 
     def inv_baseplate_coord_transform(
         self,
@@ -354,10 +339,9 @@ class ColonyFinder:
 
         x = ((x / gsd_x) * img_width) + center_x
         y = ((y / gsd_y) * img_height) + center_y
-        r = r * (img_width/gsd_x)
+        r = r * (img_width / gsd_x)
 
         return [x, y, r]
-
 
     def remove_extra_colonies(self, coords):
         """
@@ -371,46 +355,41 @@ class ColonyFinder:
                 total_num_colonies = total_num_colonies + len(coord_list)
             logging.info("Working with %s colonies", len(coord_list))
 
-            counter_dict = (
-                {}
-            )  # key is file name, value is number of times a colony has been removed from that file
+            counter_dict = {}  # key is file name, value is number of times a colony has been removed from that file
             temp_dict = {
                 image_name: [] for image_name in coords.keys()
             }  # copy keys from coords to temp_dict but not the values
             num_colonies_to_sample = 0
 
-            if total_num_colonies > 96:
-                while num_colonies_to_sample < 96:
-                    for image_name, coord_list in coords.items():
-                        if (
-                            len(coord_list) > 0
-                        ):  # TODO: if the coord is in the two petri dishes next to the bar and they are beyond some limit, don't sample them
-                            random_sample = random.sample(coord_list, 1)
-                            temp_dict[image_name].append(random_sample)
-                            coord_list = [
-                                coord
-                                for coord in coord_list
-                                if coord not in random_sample
-                            ]
-                            num_colonies_to_sample = num_colonies_to_sample + 1
-                            counter_dict[image_name] = (
-                                counter_dict.get(image_name, 0) + 1
-                            )
-                            if len(coord_list) == 0:
-                                logging.info(
-                                    "All colonies in %s will be sampled from",
-                                    image_name,
-                                )
-
-            coords = temp_dict
-
-            logging.info(
-                "Removed %s colonies from each of the following files: %s",
-                str(counter_dict.values())[12:-1],
-                str(counter_dict.keys())[10:-1],
-            )
-            logging.info("Extra colonies removed")
+            # if total_num_colonies > 96:
+            #     while num_colonies_to_sample < 96: #FIXME HACK TODO: change to 96
+            #         for image_name, coord_list in coords.items():
+            #             if (
+            #                 len(coord_list) > 0
+            #             ):  # TODO: if the coord is in the two petri dishes next to the bar and they are beyond some limit, don't sample them
+            #                 random_sample = random.sample(coord_list, 1)
+            #                 temp_dict[image_name].extend(random_sample)
+            #                 coord_list = [coord for coord in coord_list if coord not in random_sample]
+            #                 num_colonies_to_sample = num_colonies_to_sample + 1
+            #                 counter_dict[image_name] = counter_dict.get(image_name, 0) + 1
+            #                 if len(coord_list) == 0:
+            #                     logging.info(
+            #                         "All colonies in %s will be sampled from",
+            #                         image_name,
+            #                     )
+                    
+            #     coords = temp_dict
+            
+            #     logging.info(
+            #         "Removed %s colonies from each of the following files: %s",
+            #         str(counter_dict.values())[12:-1],
+            #         str(counter_dict.keys())[10:-1],
+            #     )
+            #     logging.info("Extra colonies removed")
+            # else:
+                # logging.info("No extra colonies to remove. Returning original coords.")
             return coords
+
         except Exception as e:
             logging.critical("Error removing extra colonies: ", e)
             raise RuntimeError("Error removing extra colonies: ", e)
@@ -419,15 +398,11 @@ class ColonyFinder:
         self,
         coords,
         images,
-        annotation_image_input_path,
-        annotation_output_path,
         wells=CONSTANTS.WELLS,
         image_height=CONSTANTS.IMG_HEIGHT,
         image_width=CONSTANTS.IMG_WIDTH,
         petri_dish_roi=CONSTANTS.PETRI_DISH_ROI,
-        min_colony_radius=CONSTANTS.MIN_COLONY_RADIUS,
         gsd_x=CONSTANTS.GSD_X,
-        gsd_y=CONSTANTS.GSD_Y,
     ):
         """
         takes the images in the image input path, and: draws circles around the colonies, writes the well the colony is destined for next to each colony
@@ -438,55 +413,29 @@ class ColonyFinder:
         # logging.info(" ")
         logging.info("Creating annotated images...")
 
-        well_number_index_counter = (
-            0  # itertes for every colony, used to write well number next to colony
-        )
+        well_number_index_counter = 0  # itertes for every colony, used to write well number next to colony
         annotated_images = []
 
         try:
-            if not os.path.exists(annotation_output_path):
-                try:
-                    logging.info(
-                        "Creating annotated image directory: %s", annotation_output_path
-                    )
-                    os.makedirs(annotation_output_path)
-                except Exception as e:
-                    logging.info(
-                        "Error creating annotation image output directory: ", e
-                    )
-                    raise RuntimeError(
-                        "Error creating annotationt image output diretory: ", e
-                    )
-
-            logging.info("Annotated images will be saved to %s", annotation_output_path)
-
             # Loop through each image file in the specified folder path
             for index, (image_name, coord_list) in enumerate(coords.items()):
                 logging.info("Creating annotations for %s", image_name)
-                print(index)
                 image = images[index]
-                # image = cv2.imread(
-                #     os.path.join(annotation_image_input_path, str(image_name) + ".jpg")
-                # )
-
-                # Open the colony coordinates text file corresponding to the current image
 
                 if len(coord_list) > 0:
-                    # Iterate over each line in the text file
                     for colony_coord in coord_list:
                         try:
-                            x = int(colony_coord[0])
-                            y = int(colony_coord[1])
-                            r = int(colony_coord[2])
-                            x, y = self.inv_baseplate_coord_transform(x, y, r)
+                            x = colony_coord[0]
+                            y = colony_coord[1]
+                            r = colony_coord[2]
+                            x, y, r = map(int, self.inv_baseplate_coord_transform(x, y, r))
+
                             if well_number_index_counter < 96:
                                 colony_number = wells[well_number_index_counter]
-                                well_number_index_counter = (
-                                    well_number_index_counter + 1
-                                )
+                                well_number_index_counter = well_number_index_counter + 1
                             else:
                                 logging.error(
-                                    "Well number index counter exceeded 96. Please remove extra colonies before generating baseplate coords"
+                                    "Well number index counter exceeded 96. Please remove extra colonies before beginning sampling."
                                 )
                                 colony_number = "ERR"
 
@@ -497,13 +446,7 @@ class ColonyFinder:
                         # draw circles around colonies, and write colony number next to them
                         try:
                             cv2.circle(image, (x, y), int(r), (0, 0, 0), 2)
-                            cv2.rectangle(
-                                image,
-                                (int(x - 0.5 * gsd_x), int(y - 0.5 * gsd_y)),
-                                (int(x + 0.5 * gsd_x), int(y + 0.5 * gsd_y)),
-                                (0, 0, 0),
-                                2,
-                            )  # FIXME
+                            cv2.circle(image, (x, y), int(CONSTANTS.MIN_COLONY_DISTANCE * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)), (0, 0, 255), 1)
                             cv2.putText(
                                 image,
                                 str(colony_number),
@@ -520,16 +463,16 @@ class ColonyFinder:
                 cv2.circle(
                     image,
                     (int(0.5 * image_width), int(0.5 * image_height)),
-                    int(petri_dish_roi * image_width),
+                    int(petri_dish_roi * image_width / gsd_x),
                     (0, 255, 0),
                     2,
                 )
+
+                ylim_row = int(CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_HEIGHT / CONSTANTS.GSD_Y))
+                ylim_row = int(ylim_row + (image_height / 2))
+                cv2.line( image, (0, ylim_row), (CONSTANTS.IMG_WIDTH, ylim_row), (0, 255, 0), 2) 
                 annotated_images.extend(image)
 
-                # save_path = os.path.join(annotation_output_path, image_name + ".jpg")
-                # logging.info("Saving annotated image to: %s", save_path)
-                # cv2.imwrite(save_path, image)
-                
 
             logging.info("Annotated image creation complete")
 
@@ -539,42 +482,4 @@ class ColonyFinder:
             logging.critical("An error occured while annotating images: ", e)
             raise RuntimeError("An error occured while annotating images: ", e)
 
-    def generate_baseplate_coords(self, coords, wells=CONSTANTS.WELLS):
-        logging.info("Generating baseplate coords...")
-        try:
-            total_colony_counter = 0
-            well_counter = 0
 
-            for _, coord_list in coords.items():
-                for colony_coord in coord_list:
-                    print(colony_coord)
-
-                    colony_coord = colony_coord[:-1]  # remove radius from colony coord
-                    colony_coord = self.baseplate_coord_transform(
-                        colony_coord[0], colony_coord[1]
-                    )
-
-                    print(
-                        "Well: ",
-                        wells[well_counter],
-                        "for colony coords: ",
-                        colony_coord,
-                    )
-                    well_counter = well_counter + 1
-
-            if total_colony_counter > 96:
-                logging.warning(
-                    "Error generating baseplate coords: expected 96 colonies or less, got %s",
-                    total_colony_counter,
-                )
-                pass
-
-            else:
-                logging.info(
-                    "baseplate coords generted for %s colonies", total_colony_counter
-                )
-                return coords
-
-        except Exception as e:
-            logging.critical("Error generating baseplate coords: ", e)
-            raise RuntimeError("Error generating baseplate coords: ", e)

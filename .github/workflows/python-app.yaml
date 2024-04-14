@@ -57,7 +57,11 @@ jobs:
         run: |
             ls
             cd OpenCFU 
-            ./opencfu -i ../4-5-images/p0.jpg > ../output/cfu-csv 
+            ./opencfu -i ../4-5-images/p0.jpg
+            ./opencfu -i ../4-5-images/p1.jpg
+            ./opencfu -i ../4-5-images/p2.jpg
+            ./opencfu -i ../4-5-images/p3.jpg
+
 
       - name: Check versions
         run: pip freeze

@@ -1,6 +1,4 @@
-CFU_PATH = (
-    "/home/runner/work/libcolonyfind/libcolonyfind/OpenCFU"  # TODO make runner wd
-)
+CFU_PATH = "/home/runner/work/libcolonyfind/libcolonyfind/OpenCFU"  # TODO make runner wd
 """
 Path to wherever CFU is installed in WSL. Yes those four backslashes are necesary. No I don't like it either. 
 """
@@ -33,7 +31,7 @@ Neither colony will be sampled from if they are closer than this distance
 This distance is in fractions of an image. Hopefully I remember to change that...
 """
 
-MIN_COLONY_RADIUS = 1  # FIXME THIS MAY BE TOO SMALL. or too big. don't know
+MIN_COLONY_RADIUS = 1  # TODO: FIXME 
 """
 Used by remove_unsampleable_colonies()
 Defines the minimum radius for a colony to be sampleable. 
@@ -48,7 +46,7 @@ Defines the closest a colony can be to the x-axis origin in the two plates
 closest to the x-axis origin.
 """
 
-PETRI_DISH_ROI = 40
+PETRI_DISH_ROI = 50 # TODO: FIXME
 """
 Used by remove_unsampleable_colonies()
 Defines distance from center of image colonies can be to be considered sampleable
