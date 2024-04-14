@@ -55,7 +55,8 @@ jobs:
 
       - name: Run OpenCFU
         run: |
-            ls 
+            ls
+            cd OpenCFU 
             ./opencfu -i ../4-5-images/p0.jpg 
 
       - name: Check versions
