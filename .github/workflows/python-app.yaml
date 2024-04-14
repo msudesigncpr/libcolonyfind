@@ -26,14 +26,18 @@ jobs:
       - name: Create environment
         run: hatch env create
 
-      - name: Install pytest
-        run: |
-            python -m pip install --upgrade pip
-            pip install pytest
+      # - name: Install pytest
+      #   run: |
+      #       python -m pip install --upgrade pip
+      #       pip install pytest
 
-      - name: Install opencv2
-        run: |
-            sudo apt update && sudo apt install libopencv-dev     
+      # - name: Install opencv2
+      #   run: |
+      #       sudo apt update && sudo apt install libopencv-dev     
+  
+      - name: Install libcolonyfind
+        run: pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
+
 
       - name: Build OpenCFU
         run: |
@@ -42,10 +46,12 @@ jobs:
             autoreconf -i
             ./configure --without-gui
             automake --add-missing
-            make 
+            make -Wno-misleading-indentation 
             pwd
             ./opencfu -h     
 
+      - name: Check versions
+        run: pip freeze
 
       - name:  Test with pytest
         run: pytest
