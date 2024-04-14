@@ -39,7 +39,9 @@ jobs:
         run: pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
 
       - name: Clone libcolonyfind
-        run: git clone https://github.com/msudesigncpr/libcolonyfind.git
+        run: |
+          git clone https://github.com/msudesigncpr/libcolonyfind.git
+          ls
 
 
       - name: Build OpenCFU
