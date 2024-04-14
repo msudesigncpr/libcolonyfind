@@ -20,27 +20,24 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"   
-
       - name: Install hatch
         run: python -m pip install hatch
 
       - name: Create environment
         run: hatch env create
 
-      - name: Install flake8
-        run: |
-            python -m pip install --upgrade pip
-            pip install pytest
+    #   - name: Install flake8
+    #     run: |
+    #         python -m pip install --upgrade pip
+    #         pip install pytest
 
-      - name: Install opencv2
-        run: |
-            sudo apt update && sudo apt install libopencv-dev     
+    #   - name: Install opencv2
+    #     run: |
+    #         sudo apt update && sudo apt install libopencv-dev     
 
       - name: Build OpenCFU
         run: |
-            git clone https://github.com/msudesigncpr/OpenCFU/tree/master
+            git clone https://github.com/msudesigncpr/OpenCFU.git
             cd OpenCFU
             autoreconf -i
             automake --add-missing
