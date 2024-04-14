@@ -1,7 +1,7 @@
 # libcolonyfind
 
 This is a library for the automatic detection of colonies for the colony-picking robot 
-MSU senior design project. This library provides a single function `find_colonies()` that 
+MSU senior design project. This library provides a `ColonyFinder` class that 
 returns coordinates to colonies within an image valid for sampling.
 See the [documentation][apidocs] for more information. 
 
@@ -25,33 +25,31 @@ python -m venv .venv
 pip install "git+https://github.com/msudesigncpr/libcolonyfind.git"
 ```
 
-> <font color="red">WARNING</font>
->
-> [OpenCFU](https://github.com/msudesigncpr/OpenCFU/tree/master) running on WSL is necesary for this library to work.
-> The path to this instance of OpenCFU will need to be specified in
-> [constants.py](https://github.com/msudesigncpr/libcolonyfind/blob/5507e8dfbcfe86470950627f8870ba7f2ad7b9e1/src/libcolonyfind/constants.py#L31-L34)
+![#f03c15](https://placehold.co/15x15/f03c15/f03c15.png) WARNING ![#f03c15](https://placehold.co/15x15/f03c15/f03c15.png) 
+> excuse me yes may i have your attention for a moment please
+
+[OpenCFU](https://github.com/msudesigncpr/OpenCFU/tree/master) running on WSL is necesary for this library to work.
+The path to this instance of OpenCFU will need to be specified in
+[constants.py](https://github.com/msudesigncpr/libcolonyfind/blob/5507e8dfbcfe86470950627f8870ba7f2ad7b9e1/src/libcolonyfind/constants.py#L31-L34)
+
 
 
 ## Minimal Usage Example
 
-To get started quickly, the following code will ingest images and spit out coords to 96 (or less) colonies in mm offsets from the center of those images.
+To get started quickly, the following code will ingest images and spit out coords to a maximum of 96 colonies in mm offsets from the center of those images.
 In the CPR process control code, this happens [here](https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L225).
 
 
 ```python
-from libcolonyfind import find_colonies
+from libcolonyfind.colony_finder import ColonyFinder
 
 def main():
-        raw_image_path = "./raw_images" # Folder containing images of petri dishes
-        output_dir = "./output"      
-        
-        csv_out_dir = Path(output_dir / "02_csv_data")     # OpenCFU finds colonies within images, those coords are placed here
-        annotated_image_dir = Path(output_dir / "03_annotated") 
-        csv_out_dir.mkdir()
-        annotated_image_dir.mkdir()
-        raw_baseplate_coords_dict = find_colonies(
-            raw_image_path, csv_out_dir, annotated_image_dir
-        )  # saves annotated images to annotated_image_dir, returns coords to colonies (api docs for coord system info)
+    image_names = ["P0", "P1", "P2", "P3", "P4", "P5"]
+    raw_image_path='../../some-images'
+    csv_out_path='../../output/cfu-csv'
+    annotated_image_output_path='../../output/annotated-images'
+    cf = ColonyFinder(image_names, raw_image_path, csv_out_path, annotated_image_output_path)
+    coords = cf.run_full_proc() # Process images and return coordinates of colonies
 
 if __name__ == "__main__":
     main()
