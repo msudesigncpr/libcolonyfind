@@ -41,6 +41,7 @@ jobs:
             cd OpenCFU
             autoreconf -i
             automake --add-missing
+            ls
 
 
       - name:  Test with pytest
