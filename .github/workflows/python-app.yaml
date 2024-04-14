@@ -46,14 +46,15 @@ jobs:
         run: |
             git clone https://github.com/msudesigncpr/OpenCFU.git
             cd OpenCFU
-            autoreconf -i
+            autoreconf -i -Wno-misleading-indentation 
             ./configure --without-gui
             automake --add-missing
-            make -Wno-misleading-indentation 
+            make 
             ./opencfu -h     
 
       - name: Run OpenCFU
         run: |
+            ls 
             ./opencfu -i ../libcolonyfind/4-5-images/p0.jpg 
 
       - name: Check versions
