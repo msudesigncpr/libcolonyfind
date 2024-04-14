@@ -40,7 +40,7 @@ jobs:
             git clone https://github.com/msudesigncpr/OpenCFU.git
             cd OpenCFU
             autoreconf -i
-            ./configure
+            ./configure --without-gui
             automake --add-missing
             ./opencfu -h
             ls
