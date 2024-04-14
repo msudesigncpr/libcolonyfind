@@ -17,14 +17,18 @@ class ColonyFinder:
         self,
         raw_image_path,
         csv_out_path,
-        image_names,
-        annotated_image_output_path=None,
+        images, 
     ):
         self.raw_image_path = raw_image_path
         self.csv_out_path = csv_out_path
-        self.annotated_image_output_path = annotated_image_output_path
 
-        self.image_names = image_names
+        """
+        array of image names to annotate
+        """
+        self.images = images
+        """
+        array of images to annotate. If None, will not annotate images
+        """
 
         self.raw_coords = {}
         self.valid_coords = {}
@@ -38,16 +42,21 @@ class ColonyFinder:
 
     def run_full_proc(self):
         self.run_cfu(self.raw_image_path, self.csv_out_path)
-        coords = self.parse_cfu_csv(self.csv_out_path)
-        coords = self.remove_invalid_colonies(coords)
-        coords = self.remove_extra_colonies(coords)
+        self.raw_coords = self.parse_cfu_csv(self.csv_out_path)
+        self.valid_coords = self.remove_invalid_colonies(self.raw_coords)
+        self.final_coords = self.remove_extra_colonies(self.valid_coords)
 
-        if self.annotated_image_output_path is not None:
-            self.annotate_images(
-                coords, self.raw_image_path, self.annotated_image_output_path
+        if self.images is not None:
+            self.images = self.annotate_images(
+                self.final_coords, self.images,
             )
-        baseplate_coords = self.generate_baseplate_coords(coords)
-        return baseplate_coords
+
+    def get_annot_images(self):
+        return self.images
+    
+    def get_coords(self):
+        return self.final_coords
+        
 
     def run_cfu(self, raw_image_path, csv_out_path, cfu_path=CONSTANTS.CFU_PATH):
         """
@@ -106,10 +115,12 @@ class ColonyFinder:
             raise RuntimeError("CFU processing failed, terminating...")
         os.chdir(init_dir)
 
-    def parse_cfu_csv(self, csv_path, gsd_x=CONSTANTS.GSD_X):
+    def parse_cfu_csv(self, csv_path):
         """
         openCFU generates .csv files, which are moved to https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L224
         This function reads the .csv files, extracts the colony coordinates returns a dict with the file name as the key, and the value as a list of coordinates for each colony in the image
+        These coords are in mm offsets from the center of the image. This is done using the baseplate_coord_transform function
+        
         for ex:
 
         coords = {
@@ -150,9 +161,8 @@ class ColonyFinder:
                         y = float(row[2])
                         r = float(row[7])
 
-                        mm_coords = self.baseplate_coord_transform(x, y)
-                        mm_coords.extend([r * gsd_x])
-
+                        mm_coords = self.baseplate_coord_transform(x, y, r)
+ 
                         temp.append(mm_coords)
 
                 coords[base_image_name] = temp
@@ -171,8 +181,7 @@ class ColonyFinder:
         petri_dish_roi=CONSTANTS.PETRI_DISH_ROI,
         min_colony_dist=CONSTANTS.MIN_COLONY_DISTANCE,
         min_colony_radius=CONSTANTS.MIN_COLONY_RADIUS,
-        img_height=CONSTANTS.IMG_HEIGHT,
-        img_width=CONSTANTS.IMG_WIDTH,
+        x_limit_min=CONSTANTS.XLIMIT_MIN,
     ):
         """
         Processes coord dict and removes colonies that are:
@@ -212,7 +221,7 @@ class ColonyFinder:
                 main_colony_r = float(main_colony_coords[2])
 
                 if (
-                    self.distance_from_center(main_colony_x, main_colony_y)
+                    self.distance_from_center(main_colony_x, main_colony_y) # TODO fix
                     > petri_dish_roi
                 ):
                     bad_colony = True
@@ -241,9 +250,9 @@ class ColonyFinder:
                             < min_colony_dist
                         )
 
-                        main_is_out_bounds = (main_colony_y < -27.77) and (
-                            petri_dish_counter == 0 or petri_dish_counter == 1
-                        )  # TODO: Make petri dish counter numbers constants
+                        main_is_out_bounds = (main_colony_y < x_limit_min) and (
+                            petri_dish_counter in {0, 1}
+                        )  
                         print(
                             "Colony is out of bounds: ",
                             main_colony_x
@@ -308,6 +317,7 @@ class ColonyFinder:
         self,
         x,
         y,
+        r,
         gsd_x=CONSTANTS.GSD_X,
         gsd_y=CONSTANTS.GSD_Y,
         img_width=CONSTANTS.IMG_WIDTH,
@@ -319,10 +329,35 @@ class ColonyFinder:
         center_x = 0.5 * img_width
         center_y = 0.5 * img_height
 
-        x = ((x - center_x) / img_width) * gsd_x  # FIXME THIS IS PROBABLY WRONG
+        x = ((x - center_x) / img_width) * gsd_x 
         y = ((y - center_y) / img_height) * gsd_y
+        r = r * (gsd_x/img_width)
 
-        return [x, y]
+        return [x, y, r]
+    
+
+    def inv_baseplate_coord_transform(
+        self,
+        x,
+        y,
+        r,
+        gsd_x=CONSTANTS.GSD_X,
+        gsd_y=CONSTANTS.GSD_Y,
+        img_width=CONSTANTS.IMG_WIDTH,
+        img_height=CONSTANTS.IMG_HEIGHT,
+    ):
+        """
+        turns mm offsets from the center of the image to pixel coordinates
+        """
+        center_x = 0.5 * img_width
+        center_y = 0.5 * img_height
+
+        x = ((x / gsd_x) * img_width) + center_x
+        y = ((y / gsd_y) * img_height) + center_y
+        r = r * (img_width/gsd_x)
+
+        return [x, y, r]
+
 
     def remove_extra_colonies(self, coords):
         """
@@ -383,6 +418,7 @@ class ColonyFinder:
     def annotate_images(
         self,
         coords,
+        images,
         annotation_image_input_path,
         annotation_output_path,
         wells=CONSTANTS.WELLS,
@@ -425,11 +461,13 @@ class ColonyFinder:
             logging.info("Annotated images will be saved to %s", annotation_output_path)
 
             # Loop through each image file in the specified folder path
-            for image_name, coord_list in coords.items():
+            for index, (image_name, coord_list) in enumerate(coords.items()):
                 logging.info("Creating annotations for %s", image_name)
-                image = cv2.imread(
-                    os.path.join(annotation_image_input_path, str(image_name) + ".jpg")
-                )
+                print(index)
+                image = images[index]
+                # image = cv2.imread(
+                #     os.path.join(annotation_image_input_path, str(image_name) + ".jpg")
+                # )
 
                 # Open the colony coordinates text file corresponding to the current image
 
@@ -440,6 +478,7 @@ class ColonyFinder:
                             x = int(colony_coord[0])
                             y = int(colony_coord[1])
                             r = int(colony_coord[2])
+                            x, y = self.inv_baseplate_coord_transform(x, y, r)
                             if well_number_index_counter < 96:
                                 colony_number = wells[well_number_index_counter]
                                 well_number_index_counter = (
@@ -487,9 +526,10 @@ class ColonyFinder:
                 )
                 annotated_images.extend(image)
 
-                save_path = os.path.join(annotation_output_path, image_name + ".jpg")
-                logging.info("Saving annotated image to: %s", save_path)
-                cv2.imwrite(save_path, image)
+                # save_path = os.path.join(annotation_output_path, image_name + ".jpg")
+                # logging.info("Saving annotated image to: %s", save_path)
+                # cv2.imwrite(save_path, image)
+                
 
             logging.info("Annotated image creation complete")
 
