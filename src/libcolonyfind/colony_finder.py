@@ -246,10 +246,7 @@ class ColonyFinder:
                         )  # TODO: Make petri dish counter numbers constants
                         print(
                             "Colony is out of bounds: ",
-                            self.baseplate_coord_transform(
-                                main_colony_x, main_colony_y
-                            )[1]
-                            > 27.77,
+                            main_colony_x
                         )
 
                         if main_is_out_bounds:

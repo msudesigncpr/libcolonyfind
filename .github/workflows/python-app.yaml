@@ -37,13 +37,13 @@ jobs:
   
       - name: Install libcolonyfind
         run: | 
-          mkdir libcolonyfind && cd libcolonyfind
           pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
-          cd ..
 
       - name: Clone libcolonyfind
         run: |
+          mkdir libcolonyfind && cd libcolonyfind
           git clone https://github.com/msudesigncpr/libcolonyfind.git
+          cd ..
           ls
 
 
