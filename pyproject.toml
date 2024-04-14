@@ -52,3 +52,13 @@ dependencies = [
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:src/libcolonyfind}"
+
+src/
+  libcolonyfind/
+    __about__.py
+    __init__.py
+    colony_finder.py
+    constants.py
+  
+tests/
+  test_colony_finder.py

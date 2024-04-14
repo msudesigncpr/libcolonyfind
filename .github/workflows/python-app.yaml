@@ -26,10 +26,10 @@ jobs:
       - name: Create environment
         run: hatch env create
 
-    #   - name: Install flake8
-    #     run: |
-    #         python -m pip install --upgrade pip
-    #         pip install pytest
+      - name: Install pytest
+        run: |
+            python -m pip install --upgrade pip
+            pip install pytest
 
       - name: Install opencv2
         run: |
@@ -43,7 +43,7 @@ jobs:
             ./configure --without-gui
             automake --add-missing
             make 
-            ls
+            pwd
             ./opencfu -h     
 
 
