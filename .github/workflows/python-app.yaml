@@ -51,7 +51,6 @@ jobs:
             automake --add-missing -Wno-misleading-indentation 
             make
             ls
-            cd OpenCFU
             ./opencfu -h     
 
       - name: Run OpenCFU
