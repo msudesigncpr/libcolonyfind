@@ -42,8 +42,8 @@ jobs:
             autoreconf -i
             ./configure --without-gui
             automake --add-missing
-            ./opencfu -h
             ls
+            ./opencfu -h     
 
 
       - name:  Test with pytest
