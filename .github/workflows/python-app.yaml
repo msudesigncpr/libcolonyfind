@@ -35,12 +35,12 @@ jobs:
         run: |
             sudo apt update && sudo apt install libopencv-dev     
   
-      # - name: Install libcolonyfind
-      #   run: | 
-      #     mkdir libcolonyfind 
-      #     cd libcolonyfind
-      #     pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
-      #     cd ..
+      - name: Install libcolonyfind
+        run: | 
+          mkdir libcolonyfind 
+          cd libcolonyfind
+          pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
+          cd ..
 
       - name: Build OpenCFU
         run: |
