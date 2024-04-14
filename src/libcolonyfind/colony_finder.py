@@ -101,8 +101,8 @@ class ColonyFinder:
                             ">",
                             cfu_coord_wsl_path,
                         ]
-                    )  # TODO can I pipe to project dir path?
-                    # subprocess.run(['wsl', 'mv', cfu_coord_wsl_path, cfu_csv_wsl_dump_path])
+                    )  
+                    
                 except:
                     logging.critical("OpenCFU failed to run")
                     raise RuntimeError("OpenCFU failed to run")
