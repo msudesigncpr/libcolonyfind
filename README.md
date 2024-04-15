@@ -1,8 +1,12 @@
-# libcolonyfind
+<p align="center">
+<img src="https://github.com/msudesigncpr/libcolonyfind/assets/80931988/908e0e52-19ae-4aa0-b7cd-61098523dafb" width="300">
+</p>
 
-This is a library for the automatic detection of colonies for the colony-picking robot 
+<h2 align="center">The CPRs Occipital Lobe</h2>
+
+This is a library for the automatic detection of colonies for the Colony-Picking Robot 
 MSU senior design project. This library provides a `ColonyFinder` class that 
-returns coordinates to colonies within an image valid for sampling.
+creates coordinates and annotated images for images of petri dishes.
 See the [documentation][apidocs] for more information. 
 
 Along with detecting colonies, this library also handles:
@@ -25,8 +29,9 @@ python -m venv .venv
 pip install "git+https://github.com/msudesigncpr/libcolonyfind.git"
 ```
 
-![#f03c15](https://placehold.co/15x15/f03c15/f03c15.png) WARNING ![#f03c15](https://placehold.co/15x15/f03c15/f03c15.png) 
-> excuse me yes may i have your attention for a moment please
+<p align="center">
+<img src="https://placehold.co/15x15/f03c15/f03c15.png"> WARNING <img src="https://placehold.co/15x15/f03c15/f03c15.png">  
+</p>
 
 [OpenCFU](https://github.com/msudesigncpr/OpenCFU/tree/master) running on WSL is necesary for this library to work.
 The path to this instance of OpenCFU will need to be specified in
