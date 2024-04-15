@@ -13,16 +13,13 @@ class ColonyFinder:
         self,
         raw_image_path,
         csv_out_path,
-        images = None,
     ):
         self.raw_image_path = raw_image_path
         self.csv_out_path = csv_out_path
 
-        self.images = images
         """
         array of images to annotate. If None, will not annotate images
         """
-        self.annot_images = []
         """
         array of annotated images
         """
@@ -45,12 +42,7 @@ class ColonyFinder:
 
 
     def get_annot_images(self):
-        if self.images is not None:
-            self.annot_images = self.annotate_images(
-                self.final_coords,
-                self.images,
-            )
-        return self.images
+        return self.annotate_images()
 
     def get_coords(self):
         return self.final_coords
@@ -374,14 +366,9 @@ class ColonyFinder:
                             random_sample = random.sample(coord_list, 1)
                             if not temp_dict[image_name].__contains__(random_sample[0]):
                                 temp_dict[image_name].extend(random_sample)
-                            coord_list = [coord for coord in coord_list if coord not in random_sample]
-                            num_colonies_to_sample += 1
-                            counter_dict[image_name] = counter_dict.get(image_name, 0) + 1
-                            if len(coord_list) == 0:
-                                logging.info(
-                                    "All colonies in %s will be sampled from",
-                                    image_name,
-                                )
+                                coord_list = [coord for coord in coord_list if coord not in random_sample]
+                                num_colonies_to_sample += 1
+                                counter_dict[image_name] = counter_dict.get(image_name, 0) + 1
                 coords = temp_dict
 
                 logging.info(
@@ -400,8 +387,6 @@ class ColonyFinder:
 
     def annotate_images(
         self,
-        coords,
-        images,
         wells=CONSTANTS.WELLS,
         image_height=CONSTANTS.IMG_HEIGHT,
         image_width=CONSTANTS.IMG_WIDTH,
@@ -419,15 +404,18 @@ class ColonyFinder:
 
         well_number_index_counter = 0  # itertes for every colony, used to write well number next to colony
         annotated_images = []
+        coords = self.final_coords
 
         try:
             # Loop through each image file in the specified folder path
-            for index, (image_name, coord_list) in enumerate(coords.items()):
+            for image_name, coord_list in coords.items():
                 logging.info("Creating annotations for %s", image_name)
-                image = images[index]
+
+                print(os.path.join(self.raw_image_path, image_name + ".jpg"))
+                image = cv2.imread(os.path.join(self.raw_image_path, image_name + ".jpg"))
 
                 if len(coord_list) > 0:
-                    for index, colony_coord in enumerate(coord_list):
+                    for colony_coord in coord_list:
                         try:
                             x = colony_coord[0]
                             y = colony_coord[1]
@@ -495,12 +483,15 @@ class ColonyFinder:
                 ylim_row = int(CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_HEIGHT / CONSTANTS.GSD_Y))
                 ylim_row = int(ylim_row + (image_height / 2))
                 cv2.line(image, (0, ylim_row), (CONSTANTS.IMG_WIDTH, ylim_row), (0, 255, 0), 2)
-                annotated_images.extend(image)
+                annotated_images.append(image)
+
+                print("Annotated image created")
 
                 logging.info("Annotations for %s with %s colonies complete", image_name, len(coord_list))
 
             logging.info("Annotated image creation complete")
 
+            print(len(annotated_images))
             return annotated_images
 
         except Exception as e:

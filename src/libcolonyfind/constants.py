@@ -31,7 +31,7 @@ Neither colony will be sampled from if they are closer than this distance
 This distance is in fractions of an image. Hopefully I remember to change that...
 """
 
-MIN_COLONY_RADIUS = 1  # TODO: FIXME
+MIN_COLONY_RADIUS = 0.5  # TODO: FIXME
 """
 Used by remove_unsampleable_colonies()
 Defines the minimum radius for a colony to be sampleable. 
