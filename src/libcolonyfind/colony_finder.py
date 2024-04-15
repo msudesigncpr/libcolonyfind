@@ -241,7 +241,7 @@ class ColonyFinder:
                             < min_colony_dist
                         )
 
-                        main_is_out_bounds = (main_colony_y < x_limit_min) and (
+                        main_is_out_bounds = (main_colony_x < x_limit_min) and (
                             petri_dish_counter == 0 or petri_dish_counter == 1
                         )
 
@@ -516,14 +516,14 @@ class ColonyFinder:
                     2,
                 )
 
-                ylim_row = int(
+                xlim_col = int(
                     CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_HEIGHT / CONSTANTS.GSD_Y)
                 )
-                ylim_row = int(ylim_row + (image_height / 2))
+                xlim_col = int(xlim_col + (image_height / 2))
                 cv2.line(
                     image,
-                    (0, ylim_row),
-                    (CONSTANTS.IMG_WIDTH, ylim_row),
+                    (xlim_col, 0),
+                    (xlim_col, CONSTANTS.IMG_HEIGHT),
                     (0, 255, 0),
                     2,
                 )

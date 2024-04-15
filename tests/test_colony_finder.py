@@ -9,9 +9,10 @@ def test_colony_finder():
     cf.run_full_proc() # process images, create annotated images
 
     images = cf.get_annot_images()
-    for index, image in enumerate(images):
-        cv2.imwrite('output\\annotated-images\\' + str(index) + ".jpg", image)
-        print(index)
+    for file_name, image in images.items():
+        cv2.imwrite('output\\annotated-images\\' + str(file_name) + ".jpg", images[file_name])
+        print(type(images[file_name]))
+        # print(index)
 
 
 if __name__ == "__main__":
