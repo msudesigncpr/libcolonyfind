@@ -69,7 +69,7 @@ class ColonyFinder:
             raise RuntimeError("Error changing directory")
 
         try:
-            for image in os.listdir(images_for_cfu_wsl_path):
+            for image in os.listdir(images_for_cfu_path):
                 base_image_name = os.path.splitext(os.path.basename(image))[0]
                 logging.info("Processing image %s", base_image_name)
 
