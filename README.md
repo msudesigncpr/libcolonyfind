@@ -9,11 +9,6 @@ MSU senior design project. This library provides a `ColonyFinder` class that
 creates coordinates and annotated images for images of petri dishes.
 See the [documentation][apidocs] for more information. 
 
-Along with detecting colonies, this library also handles:
- - The creation of annotated images
- - The removal of "extra" colonies
- - The removal of out-of-bounds colonies
- - Translation of pixel coordinates to mm offsets
 
 [apidocs]: https://msudesigncpr.github.io/libcolonyfind/libcolonyfind/colony_finder.html
 
