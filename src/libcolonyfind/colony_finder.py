@@ -2,6 +2,7 @@ from pathlib import WindowsPath, Path
 import subprocess
 import logging
 import random
+import numpy as np
 import csv
 import os
 import cv2
@@ -12,7 +13,7 @@ class ColonyFinder:
         self,
         raw_image_path,
         csv_out_path,
-        images,
+        images = None,
     ):
         self.raw_image_path = raw_image_path
         self.csv_out_path = csv_out_path
@@ -37,18 +38,18 @@ class ColonyFinder:
         )
 
     def run_full_proc(self):
-        self.run_cfu(self.raw_image_path, self.csv_out_path)
+        # self.run_cfu(self.raw_image_path, self.csv_out_path)
         self.raw_coords = self.parse_cfu_csv(self.csv_out_path)
         self.valid_coords = self.remove_invalid_colonies(self.raw_coords)
         self.final_coords = self.remove_extra_colonies(self.valid_coords)
 
+
+    def get_annot_images(self):
         if self.images is not None:
             self.annot_images = self.annotate_images(
                 self.final_coords,
                 self.images,
             )
-
-    def get_annot_images(self):
         return self.images
 
     def get_coords(self):
@@ -191,6 +192,8 @@ class ColonyFinder:
         logging.info("Removing invalid colonies...")
 
         temp_coords = {}
+
+        petri_dish_counter = 0
         good_colony_counter = 0
 
         for image_name, coord_list in coords.items():
@@ -204,7 +207,6 @@ class ColonyFinder:
             total_colonies_in_image = len(coord_list)
             temp_coords[image_name] = []  # holds the coordinates of colonies that are valid
 
-            petri_dish_counter = 0
 
             for main_colony_coords in coord_list:
                 bad_colony = False
@@ -241,7 +243,7 @@ class ColonyFinder:
                             < min_colony_dist
                         )
 
-                        main_is_out_bounds = (main_colony_y < x_limit_min) and (petri_dish_counter in {0, 1})
+                        main_is_out_bounds = (main_colony_y < x_limit_min) and (petri_dish_counter == 0 or petri_dish_counter == 1)
 
                         if (not neighbor_is_main) and main_is_doublet:
                             bad_colony = True
@@ -257,6 +259,7 @@ class ColonyFinder:
 
                 elif bad_colony:
                     bad_colony_counter = bad_colony_counter + 1
+                    temp_coords[image_name] = [coord for coord in temp_coords[image_name] if coord != main_colony_coords]
 
             logging.info(
                 "TOO SMALL:..........%s | DOUBLET:.........%s  | OUTSIDE DISH:............%s | OOB:....................%s",
@@ -271,6 +274,8 @@ class ColonyFinder:
                 bad_colony_counter,
                 len(temp_coords[image_name]),
             )
+            petri_dish_counter += 1
+
 
         logging.info(
             "Invalid colony removal complete. %s colonies can be sampled from!",
@@ -350,9 +355,10 @@ class ColonyFinder:
         """
         logging.info("Removing extra colonies...")
         try:
-            num_colonies_to_sample = 0
+            # num_colonies_to_sample = 0
             total_num_colonies = 0
             counter_dict = {}
+            num_colonies_to_sample = 0
 
             for _, coord_list in coords.items():
                 total_num_colonies = total_num_colonies + len(coord_list)
@@ -366,9 +372,10 @@ class ColonyFinder:
                     for image_name, coord_list in coords.items():
                         if len(coord_list) > 0:
                             random_sample = random.sample(coord_list, 1)
-                            temp_dict[image_name].extend(random_sample)
+                            if not temp_dict[image_name].__contains__(random_sample[0]):
+                                temp_dict[image_name].extend(random_sample)
                             coord_list = [coord for coord in coord_list if coord not in random_sample]
-                            num_colonies_to_sample = num_colonies_to_sample + 1
+                            num_colonies_to_sample += 1
                             counter_dict[image_name] = counter_dict.get(image_name, 0) + 1
                             if len(coord_list) == 0:
                                 logging.info(
@@ -427,8 +434,9 @@ class ColonyFinder:
                             r = colony_coord[2]
                             x, y, r = map(int, self.inv_baseplate_coord_transform(x, y, r))
 
-                            if index < 96:
+                            if well_number_index_counter < 95:
                                 colony_number = wells[well_number_index_counter]
+                                well_number_index_counter = well_number_index_counter + 1
                             else:
                                 logging.error(
                                     "Well number index counter exceeded 96. Please remove extra colonies before beginning sampling."
@@ -441,23 +449,37 @@ class ColonyFinder:
 
                         # draw circles around colonies, and write colony number next to them
                         try:
-                            cv2.circle(image, (x, y), int(r), (0, 0, 0), 2)
+                            random_color = (random.randint(0, 155), random.randint(0, 155), random.randint(0, 155))
+                            cv2.circle(image, (x, y), int(r), random_color, 2)
                             cv2.circle(
                                 image,
                                 (x, y),
                                 int(CONSTANTS.MIN_COLONY_DISTANCE * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)),
-                                (0, 0, 255),
+                                random_color,
                                 1,
                             )
                             cv2.putText(
                                 image,
                                 str(colony_number),
-                                (int(x + 30), int(y - 30)),
+                                (int(x + 25), int(y - 25)),
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 2,
-                                (0, 0, 0),
-                                1,
+                                random_color,
+                                3,
                             )
+                            # draw box around text
+                            if len(colony_number) == 3:
+                                x_box_offset = 150
+                            else:
+                                x_box_offset = 110
+                            cv2.rectangle(
+                                image,
+                                (int(x + 19), int(y - 19)),
+                                (int(x + x_box_offset), int(y - 75)),
+                                random_color, 
+                                3,
+                            )
+
                         except Exception as e:
                             logging.error("Error drawing annotations")
                             raise RuntimeError("Error drawing annotations")
