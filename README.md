@@ -60,8 +60,8 @@ def find_some_colonies():
 
     # get annotated images and save
     images = cf.get_annot_images()                  
-    for index, image in enumerate(image):
-        cv2.imwrite('output\\annotated-images\\' + str(index) + ".jpg", image)
+    for index, image in enumerate(images):
+        cv2.imwrite('output\\annotated-images\\' + str(index) + ".jpg", images)
 
 if __name__ == "__main__":
     find_some_colonies()
