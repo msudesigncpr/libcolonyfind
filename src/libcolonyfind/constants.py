@@ -1,4 +1,4 @@
-CFU_PATH = "/home/runner/work/libcolonyfind/libcolonyfind/OpenCFU"  # TODO make runner wd
+CFU_PATH = "\\\\wsl.localhost/Debian/home/colon/OpenCFU"  # TODO make runner wd
 """
 Path to wherever CFU is installed in WSL. Yes those four backslashes are necesary. No I don't like it either. 
 """
