@@ -403,7 +403,7 @@ class ColonyFinder:
         logging.info("Creating annotated images...")
 
         well_number_index_counter = 0  # itertes for every colony, used to write well number next to colony
-        annotated_images = []
+        annotated_images = {}
         coords = self.final_coords
 
         try:
@@ -483,7 +483,7 @@ class ColonyFinder:
                 ylim_row = int(CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_HEIGHT / CONSTANTS.GSD_Y))
                 ylim_row = int(ylim_row + (image_height / 2))
                 cv2.line(image, (0, ylim_row), (CONSTANTS.IMG_WIDTH, ylim_row), (0, 255, 0), 2)
-                annotated_images.append(image)
+                annotated_images[image_name] = image
 
                 print("Annotated image created")
 
@@ -491,7 +491,6 @@ class ColonyFinder:
 
             logging.info("Annotated image creation complete")
 
-            print(len(annotated_images))
             return annotated_images
 
         except Exception as e:
