@@ -1,0 +1,71 @@
+name: pyapp test
+# Adopted from https://github.com/mitmproxy/pdoc/blob/25f325d06aaacba9711f957f48e770029f608f6a/.github/workflows/docs.yml
+
+on:
+  push:
+    branches:
+      - main
+      - oop-oob
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install hatch
+        run: python -m pip install hatch
+
+      - name: Create environment
+        run: hatch env create
+
+      - name: Install pytest
+        run: |
+            python -m pip install --upgrade pip
+            pip install pytest
+
+      - name: Install opencv2
+        run: |
+            sudo apt update && sudo apt install libopencv-dev     
+  
+      - name: Install libcolonyfind
+        run: | 
+          mkdir libcolonyfind 
+          cd libcolonyfind
+          pip install git+https://github.com/msudesigncpr/libcolonyfind.git@oop-oob#egg=libcolonyfind
+          cd ..
+
+      - name: Build OpenCFU
+        run: |
+            git clone https://github.com/msudesigncpr/OpenCFU.git
+            cd OpenCFU
+            autoreconf -i 
+            ./configure --without-gui
+            automake --add-missing -Wno-misleading-indentation 
+            make
+            ls
+            ./opencfu -h     
+
+      - name: Run OpenCFU
+        run: |
+            ls
+            cd OpenCFU 
+            ./opencfu -i ../4-5-images/p0.jpg > ../output/cfu-csv/p0.csv
+            ./opencfu -i ../4-5-images/p1.jpg > ../output/cfu-csv/p1.csv
+            ./opencfu -i ../4-5-images/p2.jpg > ../output/cfu-csv/p2.csv
+            ./opencfu -i ../4-5-images/p3.jpg > ../output/cfu-csv/p3.csv
+
+      - name: Check versions
+        run: pip freeze
+
+      - name:  Test with pytest
+        run: pytest
+
+    
