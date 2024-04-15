@@ -7,11 +7,6 @@ import os
 import cv2
 from libcolonyfind import constants as CONSTANTS
 
-# TODO: accept an array of image names
-
-# TODO pass thru init
-
-
 class ColonyFinder:
     def __init__(
         self,
@@ -42,7 +37,7 @@ class ColonyFinder:
         )
 
     def run_full_proc(self):
-        # self.run_cfu(self.raw_image_path, self.csv_out_path)
+        self.run_cfu(self.raw_image_path, self.csv_out_path)
         self.raw_coords = self.parse_cfu_csv(self.csv_out_path)
         self.valid_coords = self.remove_invalid_colonies(self.raw_coords)
         self.final_coords = self.remove_extra_colonies(self.valid_coords)
@@ -61,8 +56,9 @@ class ColonyFinder:
 
     def run_cfu(self, raw_image_path, csv_out_path, cfu_path=CONSTANTS.CFU_PATH):
         """
-        uses WSL to run the instance of OpenCFU at CONSTANTS.CFU_PATH on images in img_folder_path
+        Uses WSL to run the instance of OpenCFU at CONSTANTS.CFU_PATH on images in img_folder_path
         OpenCFU generates .csv files, dumps them in `csv_out_path`
+        Those are then parsed by parse_cfu_csv
         """
 
         images_for_cfu_path = Path(raw_image_path).resolve()
@@ -116,9 +112,11 @@ class ColonyFinder:
 
     def parse_cfu_csv(self, csv_path):
         """
-        openCFU generates .csv files, which are moved to https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L224
-        This function reads the .csv files, extracts the colony coordinates returns a dict with the file name as the key, and the value as a list of coordinates for each colony in the image
-        These coords are in mm offsets from the center of the image. This is done using the baseplate_coord_transform function
+        openCFU generates .csv files, which are moved to where the process control sends them. This happens 
+        [here](https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L224)
+        This function reads the .csv files, extracts the colony coordinates, and returns a dict with the file names as the keys, and coordinates as the values.
+        These coords are in mm offsets from the center of the image. This is done using the baseplate_coord_transform function.
+        Check out the constants.py docs for more info on the conversion factors used.
 
         for ex:
 
@@ -223,7 +221,7 @@ class ColonyFinder:
                     bad_colony = True
                     too_small_colony_counter = too_small_colony_counter + 1
                 else:
-                    for neighbor_colony_coords in coord_list:  # mmm O(n^2). great.
+                    for neighbor_colony_coords in coord_list:  # mmm. stupid code.
                         neighbor_colony_x = float(neighbor_colony_coords[0])
                         neighbor_colony_y = float(neighbor_colony_coords[1])
                         neighbor_colony_r = float(neighbor_colony_coords[2])
@@ -281,12 +279,18 @@ class ColonyFinder:
         return temp_coords
 
     def distance_from_center(self, x0, y0):
+        """
+        returns the distance from the center of the image to a given point
+        """
         x_dist = abs(x0 - 0.5) ** 2
         y_dist = abs(y0 - 0.5) ** 2
         distance = (x_dist + y_dist) ** 0.5
         return distance
 
     def distance_between_colonies(self, x0, y0, r0, x1, y1, r1):
+        """
+        returns the distance between two colonies. If the colonies are overlapping, returns -1
+        """
         x_dist = abs(x0 - x1) ** 2
         y_dist = abs(y0 - y1) ** 2
         distance = (x_dist + y_dist) ** 0.5
@@ -342,7 +346,7 @@ class ColonyFinder:
 
     def remove_extra_colonies(self, coords):
         """
-        removes colonies from coordinate dict until there are 96 or fewer colonies
+        Randomly removes colonies from coordinate dict if there are more than 96 total valid colonies
         """
         logging.info("Removing extra colonies...")
         try:
