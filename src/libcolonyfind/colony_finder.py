@@ -460,7 +460,7 @@ class ColonyFinder:
                                 int, self.inv_baseplate_coord_transform(x, y, r)
                             )
 
-                            if well_number_index_counter < 95:
+                            if well_number_index_counter < 96:
                                 colony_number = wells[well_number_index_counter]
                                 well_number_index_counter = (
                                     well_number_index_counter + 1
