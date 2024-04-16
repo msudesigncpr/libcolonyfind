@@ -24,13 +24,10 @@ python -m venv .venv
 pip install "git+https://github.com/msudesigncpr/libcolonyfind.git"
 ```
 
-<p align="center">
-<img src="https://placehold.co/15x15/f03c15/f03c15.png"> WARNING <img src="https://placehold.co/15x15/f03c15/f03c15.png">  
-</p>
-
-[OpenCFU](https://github.com/msudesigncpr/OpenCFU/tree/master) running on WSL is necesary for this library to work.
-The path to this instance of OpenCFU will need to be specified in
-[constants.py](https://github.com/msudesigncpr/libcolonyfind/blob/5507e8dfbcfe86470950627f8870ba7f2ad7b9e1/src/libcolonyfind/constants.py#L31-L34)
+> [!WARNING]
+> [OpenCFU](https://github.com/msudesigncpr/OpenCFU/tree/master) running on WSL is necesary for this library to work.
+> The path to this instance of OpenCFU will need to be specified in
+> [constants.py](https://github.com/msudesigncpr/libcolonyfind/blob/5507e8dfbcfe86470950627f8870ba7f2ad7b9e1/src/libcolonyfind/constants.py#L31-L34)
 
 
 
