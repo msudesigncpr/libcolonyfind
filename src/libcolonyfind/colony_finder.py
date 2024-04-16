@@ -226,9 +226,6 @@ class ColonyFinder:
                     bad_colony = True
                     over_edge_colony_counter = over_edge_colony_counter + 1
 
-                elif main_colony_r < min_colony_radius:
-                    bad_colony = True
-                    too_small_colony_counter = too_small_colony_counter + 1
                 else:
                     for neighbor_colony_coords in coord_list:  # mmm. stupid code.
                         neighbor_colony_x = float(neighbor_colony_coords[0])
@@ -254,9 +251,14 @@ class ColonyFinder:
                             petri_dish_counter == 0 or petri_dish_counter == 1
                         )
 
+
                         if (not neighbor_is_main) and main_is_doublet:
                             bad_colony = True
                             doublet_colony_counter = doublet_colony_counter + 1
+
+                        elif main_colony_r < min_colony_radius:
+                            bad_colony = True
+                            too_small_colony_counter = too_small_colony_counter + 1
 
                         elif (not neighbor_is_main) and main_is_out_bounds:
                             bad_colony = True
