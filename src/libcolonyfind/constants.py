@@ -3,7 +3,7 @@ CFU_PATH = "\\\\wsl.localhost/Debian/home/colon/OpenCFU"  # TODO make runner wd
 Path to wherever CFU is installed in WSL. Yes those four backslashes are necesary. No I don't like it either. 
 """
 
-GSD_X = 174.45
+GSD_X = 167.79
 """
 mm per pixel in the x direction
 """
