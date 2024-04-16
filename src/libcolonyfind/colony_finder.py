@@ -442,7 +442,7 @@ class ColonyFinder:
             0  # itertes for every colony, used to write well number next to colony
         )
         annotated_images = {}
-        coords = self.final_coords
+        coords = self.raw_coords
 
         try:
             # Loop through each image file in the specified folder path
