@@ -426,10 +426,14 @@ class ColonyFinder:
         gsd_x=CONSTANTS.GSD_X,
     ):
         """
-        takes the images in the image input path, and: draws circles around the colonies, writes the well the colony is destined for next to each colony
-        saves annotated images to annotation output path
-        FIXME draws ROI circle around petri dish. remove when
-        xy coords are unfucked and camera is centered
+        takes the images in the image input path, and:
+        - draws circles around the colonies
+        - writes the well the colony is destined for next to each colony
+        - draws a circle around the colony 
+        - draws a circle of the same radius as CONSTANTS.MIN_COLONY_RADIUS in the center of the colony
+        text and circles are colored randomly, so that the viewer can see which colonies are being put in what well
+
+        - **Returns** a dict of annotated images, with the image name as the key, and the annotated image as the value
         """
         # logging.info(" ")
         logging.info("Creating annotated images...")
@@ -467,7 +471,7 @@ class ColonyFinder:
                                 )
                             else:
                                 logging.error(
-                                    "Well number index counter exceeded 96. Please remove extra colonies before beginning sampling."
+                                    "Tried to create annotations for over 96 colonies. Please remove extra colonies before beginning sampling."
                                 )
                                 colony_number = "ERR"
 
@@ -493,6 +497,7 @@ class ColonyFinder:
                                 random_color,
                                 1,
                             )
+                            cv2.circle(image, (x, y), 1, random_color, 1)
                             cv2.putText(
                                 image,
                                 str(colony_number),
