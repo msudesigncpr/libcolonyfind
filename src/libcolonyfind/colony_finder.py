@@ -442,8 +442,8 @@ class ColonyFinder:
             0  # itertes for every colony, used to write well number next to colony
         )
         annotated_images = {}
-        # coords = self.final_coords
-        coords = self.valid_coords
+        coords = self.final_coords
+        # coords = self.valid_coords
 
         try:
             # Loop through each image file in the specified folder path
@@ -499,27 +499,27 @@ class ColonyFinder:
                                 1,
                             )
                             cv2.circle(image, (x, y), 1, random_color, 1)
-                            # cv2.putText(
-                            #     image,
-                            #     str(colony_number),
-                            #     (int(x + 25), int(y - 25)),
-                            #     cv2.FONT_HERSHEY_SIMPLEX,
-                            #     2,
-                            #     random_color,
-                            #     3,
-                            # )
-                            # # draw box around text
-                            # if len(colony_number) == 3:
-                            #     x_box_offset = 150
-                            # else:
-                            #     x_box_offset = 110
-                            # cv2.rectangle(
-                            #     image,
-                            #     (int(x + 19), int(y - 19)),
-                            #     (int(x + x_box_offset), int(y - 75)),
-                            #     random_color,
-                            #     3,
-                            # )
+                            cv2.putText(
+                                image,
+                                str(colony_number),
+                                (int(x + 25), int(y - 25)),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                2,
+                                random_color,
+                                3,
+                            )
+                            # draw box around text
+                            if len(colony_number) == 3:
+                                x_box_offset = 150
+                            else:
+                                x_box_offset = 110
+                            cv2.rectangle(
+                                image,
+                                (int(x + 19), int(y - 19)),
+                                (int(x + x_box_offset), int(y - 75)),
+                                random_color,
+                                3,
+                            )
 
                         except Exception as e:
                             logging.error("Error drawing annotations")
