@@ -222,7 +222,7 @@ class ColonyFinder:
                 if (
                     self.distance_from_center(main_colony_x, main_colony_y)
                     > petri_dish_roi
-                ):  # TODO fix
+                ): 
                     bad_colony = True
                     over_edge_colony_counter = over_edge_colony_counter + 1
 
@@ -256,7 +256,7 @@ class ColonyFinder:
                             bad_colony = True
                             doublet_colony_counter = doublet_colony_counter + 1
 
-                        elif main_colony_r < min_colony_radius:
+                        elif (not neighbor_is_main) and (main_colony_r < min_colony_radius):
                             bad_colony = True
                             too_small_colony_counter = too_small_colony_counter + 1
 
@@ -442,8 +442,8 @@ class ColonyFinder:
             0  # itertes for every colony, used to write well number next to colony
         )
         annotated_images = {}
-        coords = self.final_coords
-        coords = self.raw_coords
+        # coords = self.final_coords
+        coords = self.valid_coords
 
         try:
             # Loop through each image file in the specified folder path
@@ -492,7 +492,7 @@ class ColonyFinder:
                                 image,
                                 (x, y),
                                 int(
-                                    CONSTANTS.MIN_COLONY_DISTANCE
+                                    CONSTANTS.MIN_COLONY_DISTANCE 
                                     * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
                                 ),
                                 random_color,
