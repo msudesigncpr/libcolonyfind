@@ -59,6 +59,9 @@ class ColonyFinder:
         cfu_csv_win_dump_path = Path(csv_out_path).resolve()
         cfu_csv_wsl_dump_path = cfu_csv_win_dump_path.as_posix().replace("C:", "/mnt/c")
 
+        if len(os.listdir(images_for_cfu_path)) == 0:
+            logging.error("!!!!!!!!!!!!!!!!!!!!! No images found in %s !!!!!!!!!!!!!!!!!!!!", images_for_cfu_path)
+
         init_dir = os.getcwd()
 
         try:
@@ -129,6 +132,9 @@ class ColonyFinder:
         """
         logging.info("Parsing CFU CSVs...")
 
+        if len(os.listdir(csv_path)) == 0:
+            logging.error("!!!!!!!!!!!!!!!!!!!!! No CSVs found in %s !!!!!!!!!!!!!!!!!!!!", csv_path)
+
         coords = {}
         offset_index = 0
 
@@ -182,6 +188,9 @@ class ColonyFinder:
             - The camera mount sticks out towards the negative-x direction. If there are colonies on the edge of the petri dish nearest to the x-axis origin, they cannot be picked, as the camera would be obliterated by the 8020 frame.
         """
         logging.info("Removing invalid colonies...")
+
+        if len(coords) == 0:
+            logging.error("!!!!!!!!!!!!!!!!!!!!! No colonies found in coords !!!!!!!!!!!!!!!!!!!!")
 
         temp_coords = {}
 
