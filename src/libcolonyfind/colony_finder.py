@@ -485,44 +485,45 @@ class ColonyFinder:
 
                         # draw circles around colonies, and write colony number next to them
                         try:
-                            random_color = (
-                                random.randint(0, 55),
-                                random.randint(0, 55),
-                                random.randint(0, 55),
-                            )
-                            cv2.circle(image, (x, y), int(r), random_color, 2)
-                            cv2.circle(
-                                image,
-                                (x, y),
-                                int(
-                                    CONSTANTS.MIN_COLONY_DISTANCE 
-                                    * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
-                                ),
-                                random_color,
-                                1,
-                            )
-                            cv2.circle(image, (x, y), 1, random_color, 1)
-                            cv2.putText(
-                                image,
-                                str(colony_number),
-                                (int(x + 25), int(y - 25)),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                2,
-                                random_color,
-                                3,
-                            )
-                            # draw box around text
-                            if len(colony_number) == 3:
-                                x_box_offset = 150
-                            else:
-                                x_box_offset = 110
-                            cv2.rectangle(
-                                image,
-                                (int(x + 19), int(y - 19)),
-                                (int(x + x_box_offset), int(y - 75)),
-                                random_color,
-                                -1,
-                            )
+                            if colony_number != "ERR":
+                                random_color = (
+                                    random.randint(0, 55),
+                                    random.randint(0, 55),
+                                    random.randint(0, 55),
+                                )
+                                cv2.circle(image, (x, y), int(r), random_color, 2)
+                                cv2.circle(
+                                    image,
+                                    (x, y),
+                                    int(
+                                        CONSTANTS.MIN_COLONY_DISTANCE 
+                                        * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
+                                    ),
+                                    random_color,
+                                    1,
+                                )
+                                cv2.circle(image, (x, y), 1, random_color, 1)
+                                cv2.putText(
+                                    image,
+                                    str(colony_number),
+                                    (int(x + 25), int(y - 25)),
+                                    cv2.FONT_HERSHEY_SIMPLEX,
+                                    2,
+                                    random_color,
+                                    3,
+                                )
+                                # draw box around text
+                                if len(colony_number) == 3:
+                                    x_box_offset = 150
+                                else:
+                                    x_box_offset = 110
+                                cv2.rectangle(
+                                    image,
+                                    (int(x + 19), int(y - 19)),
+                                    (int(x + x_box_offset), int(y - 75)),
+                                    random_color,
+                                    -1,
+                                )
 
                         except Exception as e:
                             logging.error("Error drawing annotations")
