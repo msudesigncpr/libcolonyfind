@@ -404,6 +404,8 @@ class ColonyFinder:
                                 )
                 coords = temp_dict
 
+                logging.info("%s colonies were removed. Returning %s colonies", total_num_colonies - num_colonies_to_sample, num_colonies_to_sample)
+
                 logging.info(
                     "%s samples come from the following files: %s",
                     str(counter_dict.values())[12:-1],
