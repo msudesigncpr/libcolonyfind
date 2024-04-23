@@ -397,6 +397,7 @@ class ColonyFinder:
                                     for coord in coord_list
                                     if coord not in random_sample
                                 ]
+                                print("Num colonies to sample: ", num_colonies_to_sample)
                                 num_colonies_to_sample += 1
                                 counter_dict[image_name] = (
                                     counter_dict.get(image_name, 0) + 1
