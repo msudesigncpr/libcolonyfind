@@ -92,7 +92,7 @@ class ColonyFinder:
                             cfu_image_wsl_path,
                             ">",
                             cfu_coord_wsl_path,
-                        ]
+                        ], creationflags=subprocess.CREATE_NO_WINDOW, check=True
                     )
 
                 except:
