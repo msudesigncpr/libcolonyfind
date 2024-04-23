@@ -411,7 +411,7 @@ class ColonyFinder:
                     str(counter_dict.values())[12:-1],
                     str(counter_dict.keys())[10:-1],
                 )
-                logging.info("Extra colonies removed")
+                logging.info("Extra colony removal complete")
             else:
                 logging.info("No extra colonies to remove. Returning original coords.")
             return coords
@@ -486,9 +486,9 @@ class ColonyFinder:
                         # draw circles around colonies, and write colony number next to them
                         try:
                             random_color = (
-                                random.randint(0, 155),
-                                random.randint(0, 155),
-                                random.randint(0, 155),
+                                random.randint(0, 55),
+                                random.randint(0, 55),
+                                random.randint(0, 55),
                             )
                             cv2.circle(image, (x, y), int(r), random_color, 2)
                             cv2.circle(
@@ -521,7 +521,7 @@ class ColonyFinder:
                                 (int(x + 19), int(y - 19)),
                                 (int(x + x_box_offset), int(y - 75)),
                                 random_color,
-                                3,
+                                -1,
                             )
 
                         except Exception as e:
