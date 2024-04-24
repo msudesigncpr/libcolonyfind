@@ -522,7 +522,7 @@ class ColonyFinder:
                                     (int(x + 19), int(y - 19)),
                                     (int(x + x_box_offset), int(y - 75)),
                                     (0, 0, 0),
-                                    -1,
+                                    3,
                                 )
 
                         except Exception as e:
