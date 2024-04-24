@@ -39,7 +39,7 @@ Kind of just a potshot number right now.
 This distance is in fractions of an image. Hopefully I remember to change that...
 """
 
-XLIMIT_MIN = -27.44
+XLIMIT_MIN = -27.00
 """
 Used by remove_unsampleable_colonies()
 Defines the closest a colony can be to the x-axis origin in the two plates
