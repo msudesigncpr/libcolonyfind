@@ -36,7 +36,7 @@ class ColonyFinder:
         )
 
     def run_full_proc(self):
-        self.run_cfu(self.raw_image_path, self.csv_out_path)
+        # self.run_cfu(self.raw_image_path, self.csv_out_path)
         self.raw_coords = self.parse_cfu_csv(self.csv_out_path)
         self.valid_coords = self.remove_invalid_colonies(self.raw_coords)
         self.final_coords = self.remove_extra_colonies(self.valid_coords)
@@ -487,9 +487,9 @@ class ColonyFinder:
                         try:
                             if colony_number != "ERR":
                                 random_color = (
-                                    random.randint(0, 55),
-                                    random.randint(0, 55),
-                                    random.randint(0, 55),
+                                    random.randint(155, 255),
+                                    random.randint(155, 255),
+                                    random.randint(155, 255),
                                 )
                                 cv2.circle(image, (x, y), int(r), random_color, 2)
                                 cv2.circle(
@@ -521,7 +521,7 @@ class ColonyFinder:
                                     image,
                                     (int(x + 19), int(y - 19)),
                                     (int(x + x_box_offset), int(y - 75)),
-                                    random_color,
+                                    (0, 0, 0),
                                     -1,
                                 )
 

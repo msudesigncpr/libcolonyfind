@@ -7,12 +7,13 @@ def test_colony_finder():
 
     cf = ColonyFinder(raw_image_path, csv_out_path)
     cf.run_full_proc() # process images, create annotated images
+    images = cf.annotate_images()
+    print(images)
 
-    images = cf.get_annot_images()
-    for file_name, image in images.items():
-        cv2.imwrite('output\\annotated-images\\' + str(file_name) + ".jpg", images[file_name])
-        print(type(images[file_name]))
-        # print(index)
+    for image in images:
+        cv2.imshow('image', image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
