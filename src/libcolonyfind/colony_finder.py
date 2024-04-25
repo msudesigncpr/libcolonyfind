@@ -42,9 +42,9 @@ class ColonyFinder:
 
     def run_full_proc(self):
         self.run_cfu(self.raw_image_path, self.csv_out_path)
-        self.raw_coords = self.parse_cfu_csv(self.csv_out_path)
-        self.valid_coords = self.remove_invalid_colonies(self.raw_coords)
-        self.final_coords = self.remove_extra_colonies(self.valid_coords)
+        self.raw_coords = self.parse_cfu_csv()
+        self.valid_coords = self.remove_invalid_colonies()
+        self.final_coords = self.remove_extra_colonies()
 
     def get_annot_images(self):
         return self.annotate_images()
@@ -111,7 +111,7 @@ class ColonyFinder:
             raise RuntimeError("CFU processing failed, terminating...")
         os.chdir(init_dir)
 
-    def parse_cfu_csv(self, csv_path):
+    def parse_cfu_csv(self):
         """
         openCFU generates .csv files, which are moved to where the process control sends them. This happens
         [here](https://github.com/msudesigncpr/slate-ui/blob/b9b4d9cf43f448a9027532bd028ca4dd8efafabc/src/slate_ui/process_control.py#L218-L224)
@@ -136,6 +136,8 @@ class ColonyFinder:
         }
         """
         logging.info("Parsing CFU CSVs...")
+
+        csv_path = self.csv_out_path
 
         if len(os.listdir(csv_path)) == 0:
             logging.error("!!!!!!!!!!!!!!!!!!!!! No CSVs found in %s !!!!!!!!!!!!!!!!!!!!", csv_path)
@@ -167,7 +169,7 @@ class ColonyFinder:
                         temp.append(mm_coords)
 
                 coords[base_image_name] = temp
-                offset_index = offset_index + 1
+                offset_index += 1
 
             logging.info("CFU CSV procecssing complete")
             return coords
@@ -178,11 +180,6 @@ class ColonyFinder:
 
     def remove_invalid_colonies(
         self,
-        coords,
-        petri_dish_roi=CONSTANTS.PETRI_DISH_ROI,
-        min_colony_dist=CONSTANTS.MIN_COLONY_DISTANCE,
-        min_colony_radius=CONSTANTS.MIN_COLONY_RADIUS,
-        x_limit_min=CONSTANTS.XLIMIT_MIN,
     ):
         """
         Processes coord dict and removes colonies that are:
@@ -193,6 +190,8 @@ class ColonyFinder:
             - The camera mount sticks out towards the negative-x direction. If there are colonies on the edge of the petri dish nearest to the x-axis origin, they cannot be picked, as the camera would be obliterated by the 8020 frame.
         """
         logging.info("Removing invalid colonies...")
+
+        coords = self.raw_coords
 
         if len(coords) == 0:
             logging.error("!!!!!!!!!!!!!!!!!!!!! No colonies found in coords !!!!!!!!!!!!!!!!!!!!")
@@ -219,7 +218,7 @@ class ColonyFinder:
 
                 if (
                     self.distance_from_center(main_colony_x, main_colony_y)
-                    > petri_dish_roi
+                    > CONSTANTS.PETRI_DISH_ROI
                 ): 
                     bad_colony = True
 
@@ -241,10 +240,10 @@ class ColonyFinder:
                                 neighbor_colony_y,
                                 neighbor_colony_r,
                             )
-                            < min_colony_dist
+                            < CONSTANTS.MIN_COLONY_DISTANCE
                         )
 
-                        main_is_out_bounds = (main_colony_x < x_limit_min) and (
+                        main_is_out_bounds = (main_colony_x < CONSTANTS.XLIMIT_MIN) and (
                             petri_dish_counter == 0 or petri_dish_counter == 1
                         )
 
@@ -252,7 +251,7 @@ class ColonyFinder:
                         if (not neighbor_is_main) and main_is_doublet:
                             bad_colony = True
 
-                        elif (not neighbor_is_main) and (main_colony_r < min_colony_radius):
+                        elif (not neighbor_is_main) and (main_colony_r < CONSTANTS.MIN_COLONY_RADIUS):
                             bad_colony = True
 
                         elif (not neighbor_is_main) and main_is_out_bounds:
@@ -335,16 +334,16 @@ class ColonyFinder:
         """
         turns mm offsets from the center of the image to pixel coordinates
         """
-        center_x = 0.5 * img_width
-        center_y = 0.5 * img_height
+        center_x = 0.5 * CONSTANTS.IMG_WIDTH
+        center_y = 0.5 * CONSTANTS.IMG_WIDTH
 
-        x = ((x / gsd_x) * img_width) + center_x
-        y = ((y / gsd_y) * img_height) + center_y
-        r = r * (img_width / gsd_x)
+        x = ((x / gsd_x) * CONSTANTS.IMG_WIDTH) + center_x
+        y = ((y / gsd_y) * CONSTANTS.IMG_WIDTH) + center_y
+        r = r * (CONSTANTS.IMG_WIDTH / gsd_x)
 
         return [x, y, r]
 
-    def remove_extra_colonies(self, coords):
+    def remove_extra_colonies(self):
         """
         Randomly removes colonies from coordinate dict if there are more than 96 total valid colonies
         """
@@ -354,6 +353,7 @@ class ColonyFinder:
             total_num_colonies = 0
             counter_dict = {}
             num_colonies_to_sample = 0
+            coords = self.valid_coords
 
             for _, coord_list in coords.items():
                 total_num_colonies = total_num_colonies + len(coord_list)
@@ -398,14 +398,7 @@ class ColonyFinder:
             logging.critical("Error removing extra colonies: ", e)
             raise RuntimeError("Error removing extra colonies: ", e)
 
-    def annotate_images(
-        self,
-        wells=CONSTANTS.WELLS,
-        image_height=CONSTANTS.IMG_HEIGHT,
-        image_width=CONSTANTS.IMG_WIDTH,
-        petri_dish_roi=CONSTANTS.PETRI_DISH_ROI,
-        gsd_x=CONSTANTS.GSD_X,
-    ):
+    def annotate_images(self):
         """
         takes the images in the image input path, and:
         - draws circles around the colonies
@@ -451,10 +444,8 @@ class ColonyFinder:
                             )
 
                             if well_number_index_counter < 96:
-                                colony_number = wells[well_number_index_counter]
-                                well_number_index_counter = (
-                                    well_number_index_counter + 1
-                                )
+                                colony_number = CONSTANTS.WELLS[well_number_index_counter]
+                                well_number_index_counter += 1
                             else:
                                 logging.error(
                                     "Tried to create annotations for over 96 colonies. Extra colonies must be removed before beginning sampling."
@@ -513,25 +504,26 @@ class ColonyFinder:
                             logging.error("Error drawing annotations")
                             raise RuntimeError("Error drawing annotations")
 
-                # cv2.circle(
+                xlim_col = int(
+                    CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
+                )
+                # xlim_col = int(xlim_col + (CONSTANTS.IMG_WIDTH / 2))
+                # cv2.line(
                 #     image,
-                #     (int(0.5 * image_width), int(0.5 * image_height)),
-                #     int(petri_dish_roi * image_width / gsd_x),
+                #     (xlim_col, 0),
+                #     (xlim_col, CONSTANTS.IMG_HEIGHT),
                 #     (0, 255, 0),
                 #     2,
                 # )
 
-                xlim_col = int(
-                    CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
-                )
-                xlim_col = int(xlim_col + (image_width / 2))
-                cv2.line(
+                cv2.circle(
                     image,
-                    (xlim_col, 0),
-                    (xlim_col, CONSTANTS.IMG_HEIGHT),
+                    (int(0.5 * CONSTANTS.IMG_WIDTH), int(0.5 * CONSTANTS.IMG_HEIGHT)),
+                    int(CONSTANTS.PETRI_DISH_ROI * CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X),
                     (0, 255, 0),
                     2,
                 )
+
                 annotated_images[image_name] = image
                 
                 cv2.imwrite('C:\\Users\\John Fike\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\output\\annotated-images\\' + image_name + '.jpg', image)
