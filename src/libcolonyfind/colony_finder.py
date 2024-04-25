@@ -521,17 +521,17 @@ class ColonyFinder:
                 #     2,
                 # )
 
-                # xlim_col = int(
-                #     CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
-                # )
-                # xlim_col = int(xlim_col + (image_width / 2))
-                # cv2.line(
-                #     image,
-                #     (xlim_col, 0),
-                #     (xlim_col, CONSTANTS.IMG_HEIGHT),
-                #     (0, 255, 0),
-                #     2,
-                # )
+                xlim_col = int(
+                    CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
+                )
+                xlim_col = int(xlim_col + (image_width / 2))
+                cv2.line(
+                    image,
+                    (xlim_col, 0),
+                    (xlim_col, CONSTANTS.IMG_HEIGHT),
+                    (0, 255, 0),
+                    2,
+                )
                 annotated_images[image_name] = image
                 
                 cv2.imwrite('C:\\Users\\John Fike\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\output\\annotated-images\\' + image_name + '.jpg', image)
