@@ -41,7 +41,7 @@ class ColonyFinder:
         )
 
     def run_full_proc(self):
-        # self.run_cfu(self.raw_image_path, self.csv_out_path)
+        self.run_cfu(self.raw_image_path, self.csv_out_path)
         self.raw_coords = self.parse_cfu_csv(self.csv_out_path)
         self.valid_coords = self.remove_invalid_colonies(self.raw_coords)
         self.final_coords = self.remove_extra_colonies(self.valid_coords)
