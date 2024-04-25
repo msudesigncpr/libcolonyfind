@@ -222,7 +222,6 @@ class ColonyFinder:
                     > petri_dish_roi
                 ): 
                     bad_colony = True
-                    over_edge_colony_counter = over_edge_colony_counter + 1
 
                 else:
                     for neighbor_colony_coords in coord_list:  # mmm. stupid code.
@@ -263,6 +262,7 @@ class ColonyFinder:
                     not temp_coords[image_name].__contains__(main_colony_coords)
                 ):
                     temp_coords[image_name].append(main_colony_coords)
+                    good_colony_counter += 1
 
                 elif bad_colony:
                     temp_coords[image_name] = [
@@ -423,8 +423,8 @@ class ColonyFinder:
             0  # itertes for every colony, used to write well number next to colony
         )
         annotated_images = {}
-        # coords = self.final_coords
-        coords = self.valid_coords
+        coords = self.final_coords
+        # coords = self.valid_coords
         # coords = self.raw_coords
 
         try:
@@ -467,7 +467,7 @@ class ColonyFinder:
 
                         # draw circles around colonies, and write colony number next to them
                         try:
-                            if colony_number == "ERR":
+                            if colony_number != "ERR":
                                 random_color = (
                                     random.randint(155, 255),
                                     random.randint(155, 255),
@@ -486,28 +486,28 @@ class ColonyFinder:
                                     2,
                                 )
 
-                                # # draw box around text
-                                # if len(colony_number) == 3:
-                                #     x_box_offset = 80
-                                # else:
-                                #     x_box_offset = 60
-                                # cv2.rectangle(
-                                #     image,
-                                #     (int(x + 10), int(y - 10)),
-                                #     (int(x + x_box_offset), int(y - 40)),
-                                #     (0, 0, 0),
-                                #     -1,
-                                # )
+                                # draw box around text
+                                if len(colony_number) == 3:
+                                    x_box_offset = 80
+                                else:
+                                    x_box_offset = 60
+                                cv2.rectangle(
+                                    image,
+                                    (int(x + 10), int(y - 10)),
+                                    (int(x + x_box_offset), int(y - 40)),
+                                    (0, 0, 0),
+                                    -1,
+                                )
 
-                                # # Well number annotation
-                                # cv2.putText(
-                                #     image,
-                                #     str(colony_number),
-                                #     (int(x + 15), int(y - 15)),
-                                #     cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                #     random_color,
-                                #     3,
-                                # )
+                                # Well number annotation
+                                cv2.putText(
+                                    image,
+                                    str(colony_number),
+                                    (int(x + 15), int(y - 15)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                    random_color,
+                                    3,
+                                )
 
                         except Exception as e:
                             logging.error("Error drawing annotations")
