@@ -491,8 +491,8 @@ class ColonyFinder:
 
                 cv2.circle(
                     image,
-                    (int(0.5 * image_width), int(0.5 * image_height)),
-                    int(petri_dish_roi * image_width / gsd_x),
+                    (int(0.5 * CONSTANTS.IMG_WIDTH), int(0.5 * CONSTANTS.IMG_HEIGHT)),
+                    int(CONSTANTS.PETRI_DISH_ROI * CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X),
                     (0, 255, 0),
                     2,
                 )
@@ -512,7 +512,6 @@ class ColonyFinder:
 
                 annotated_images[image_name] = image
                 
-
 
                 logging.info(
                     "Annotations for %s with %s colonies complete",
