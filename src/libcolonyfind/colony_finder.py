@@ -311,12 +311,12 @@ class ColonyFinder:
         """
         turns pixel coorinates to mm offsets from the center of the image
         """
-        center_x = 0.5 * img_width
-        center_y = 0.5 * img_height
+        center_x = 0.5 * CONSTANTS.IMG_WIDTH
+        center_y = 0.5 * CONSTANTS.IMG_HEIGHT
 
-        x = ((x - center_x) / img_width) * gsd_x
-        y = ((y - center_y) / img_height) * gsd_y
-        r = r * (gsd_x / img_width)
+        x = ((x - center_x) / CONSTANTS.IMG_WIDTH) * CONSTANTS.GSD_X
+        y = ((y - center_y) / CONSTANTS.IMG_HEIGHT) * CONSTANTS.GSD_Y
+        r = r * (CONSTANTS.GSD_X / CONSTANTS.IMG_WIDTH)
 
         return [x, y, r]
 
@@ -333,12 +333,12 @@ class ColonyFinder:
         """
         turns mm offsets from the center of the image to pixel coordinates
         """
-        center_x = 0.5 * img_width
-        center_y = 0.5 * img_height
+        center_x = 0.5 * CONSTANTS.IMG_WIDTH
+        center_y = 0.5 * CONSTANTS.IMG_HEIGHT
 
-        x = ((x / gsd_x) * img_width) + center_x
-        y = ((y / gsd_y) * img_height) + center_y
-        r = r * (img_width / gsd_x)
+        x = ((x / CONSTANTS.GSD_X) * CONSTANTS.IMG_WIDTH) + center_x
+        y = ((y / CONSTANTS.GSD_Y) * CONSTANTS.IMG_HEIGHT) + center_y
+        r = r * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
 
         return [x, y, r]
 
