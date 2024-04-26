@@ -489,13 +489,13 @@ class ColonyFinder:
                             logging.error("Error drawing annotations")
                             raise RuntimeError("Error drawing annotations")
 
-                # cv2.circle(
-                #     image,
-                #     (int(0.5 * image_width), int(0.5 * image_height)),
-                #     int(petri_dish_roi * image_width / gsd_x),
-                #     (0, 255, 0),
-                #     2,
-                # )
+                cv2.circle(
+                    image,
+                    (int(0.5 * image_width), int(0.5 * image_height)),
+                    int(petri_dish_roi * image_width / gsd_x),
+                    (0, 255, 0),
+                    2,
+                )
 
                 # # show oob check limit
                 # xlim_col = int(
