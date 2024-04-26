@@ -41,7 +41,7 @@ class ColonyFinder:
         )
 
     def run_full_proc(self):
-        # self.run_cfu(self.raw_image_path, self.csv_out_path)
+        self.run_cfu(self.raw_image_path, self.csv_out_path)
         self.raw_coords = self.parse_cfu_csv()                    
         self.valid_coords = self.remove_invalid_colonies()     # acts upon self.raw_coords
         self.final_coords = self.remove_extra_colonies()       # acts upon self.valid_coords
@@ -303,10 +303,6 @@ class ColonyFinder:
         x,
         y,
         r,
-        gsd_x=CONSTANTS.GSD_X,
-        gsd_y=CONSTANTS.GSD_Y,
-        img_width=CONSTANTS.IMG_WIDTH,
-        img_height=CONSTANTS.IMG_HEIGHT,
     ):
         """
         turns pixel coorinates to mm offsets from the center of the image
@@ -325,10 +321,6 @@ class ColonyFinder:
         x,
         y,
         r,
-        gsd_x=CONSTANTS.GSD_X,
-        gsd_y=CONSTANTS.GSD_Y,
-        img_width=CONSTANTS.IMG_WIDTH,
-        img_height=CONSTANTS.IMG_HEIGHT,
     ):
         """
         turns mm offsets from the center of the image to pixel coordinates
@@ -351,7 +343,6 @@ class ColonyFinder:
 
         logging.info("Removing extra colonies...")
         try:
-            # num_colonies_to_sample = 0
             total_num_colonies = 0
             counter_dict = {}
             num_colonies_to_sample = 0
@@ -402,11 +393,8 @@ class ColonyFinder:
     def annotate_images(self):
         """
         takes the images in the image input path, and:
-        - draws circles around the colonies
         - writes the well the colony is destined for next to each colony
-        - draws a circle around the colony 
         - draws a circle of the same radius as CONSTANTS.MIN_COLONY_RADIUS in the center of the colony
-        text and circles are colored randomly, so that the viewer can see which colonies are being put in what well
 
         - **Returns** a dict of annotated images, with the image name as the key, and the annotated image as the value
         """
@@ -524,7 +512,6 @@ class ColonyFinder:
 
                 annotated_images[image_name] = image
                 
-                cv2.imwrite('C:\\Users\\John Fike\\OneDrive\\Documents\\Visual Studio 2022\\cap\\libcolonyfind\\output\\annotated-images\\' + image_name + '.jpg', image)
 
 
                 logging.info(
