@@ -41,10 +41,10 @@ class ColonyFinder:
         )
 
     def run_full_proc(self):
-        self.run_cfu(self.raw_image_path, self.csv_out_path)
-        self.raw_coords = self.parse_cfu_csv()
-        self.valid_coords = self.remove_invalid_colonies()
-        self.final_coords = self.remove_extra_colonies()
+        # self.run_cfu(self.raw_image_path, self.csv_out_path)
+        self.raw_coords = self.parse_cfu_csv()                    
+        self.valid_coords = self.remove_invalid_colonies()     # acts upon self.raw_coords
+        self.final_coords = self.remove_extra_colonies()       # acts upon self.valid_coords
 
     def get_annot_images(self):
         return self.annotate_images()
@@ -52,16 +52,16 @@ class ColonyFinder:
     def get_coords(self):
         return self.final_coords
 
-    def run_cfu(self, raw_image_path, csv_out_path, cfu_path=CONSTANTS.CFU_PATH):
+    def run_cfu(self, cfu_path=CONSTANTS.CFU_PATH):
         """
         Uses WSL to run the instance of OpenCFU at CONSTANTS.CFU_PATH on images in img_folder_path
         OpenCFU generates .csv files, dumps them in `csv_out_path`
         Those are then parsed by parse_cfu_csv
         """
 
-        images_for_cfu_path = Path(raw_image_path).resolve()
+        images_for_cfu_path = Path(self.raw_image_path).resolve()
         images_for_cfu_wsl_path = images_for_cfu_path.as_posix().replace("C:", "/mnt/c")
-        cfu_csv_win_dump_path = Path(csv_out_path).resolve()
+        cfu_csv_win_dump_path = Path(self.csv_out_path).resolve()
         cfu_csv_wsl_dump_path = cfu_csv_win_dump_path.as_posix().replace("C:", "/mnt/c")
 
         if len(os.listdir(images_for_cfu_path)) == 0:
@@ -135,9 +135,9 @@ class ColonyFinder:
 
         }
         """
-        logging.info("Parsing CFU CSVs...")
-
         csv_path = self.csv_out_path
+        
+        logging.info("Parsing CFU CSVs...")
 
         if len(os.listdir(csv_path)) == 0:
             logging.error("!!!!!!!!!!!!!!!!!!!!! No CSVs found in %s !!!!!!!!!!!!!!!!!!!!", csv_path)
@@ -169,7 +169,7 @@ class ColonyFinder:
                         temp.append(mm_coords)
 
                 coords[base_image_name] = temp
-                offset_index += 1
+                offset_index = offset_index + 1
 
             logging.info("CFU CSV procecssing complete")
             return coords
@@ -178,9 +178,7 @@ class ColonyFinder:
             logging.critical("CFU CSV processing failed: %s", e)  # TODO fix logging
             raise RuntimeError("CFU CSV processing failed: %s", e)
 
-    def remove_invalid_colonies(
-        self,
-    ):
+    def remove_invalid_colonies(self):
         """
         Processes coord dict and removes colonies that are:
         - Too close to the edge of the petri dish (CONSTANTS.PETRI_DISH_ROI)
@@ -279,7 +277,7 @@ class ColonyFinder:
 
     def distance_from_center(self, x0, y0):
         """
-        returns the distance from the center of the image to a given point
+        returns the distance from the center of the image to a given point (x0, y0)
         """
         x_dist = abs(x0 - 0.5) ** 2
         y_dist = abs(y0 - 0.5) ** 2
@@ -288,7 +286,8 @@ class ColonyFinder:
 
     def distance_between_colonies(self, x0, y0, r0, x1, y1, r1):
         """
-        returns the distance between two colonies. If the colonies are overlapping, returns -1
+        Returns the distance between the edges of two colonies (x0, y0, r0) and (x1, y1, r1) 
+        If the colonies are overlapping, returns -1
         """
         x_dist = abs(x0 - x1) ** 2
         y_dist = abs(y0 - y1) ** 2
@@ -334,12 +333,12 @@ class ColonyFinder:
         """
         turns mm offsets from the center of the image to pixel coordinates
         """
-        center_x = 0.5 * CONSTANTS.IMG_WIDTH
-        center_y = 0.5 * CONSTANTS.IMG_WIDTH
+        center_x = 0.5 * img_width
+        center_y = 0.5 * img_height
 
-        x = ((x / gsd_x) * CONSTANTS.IMG_WIDTH) + center_x
-        y = ((y / gsd_y) * CONSTANTS.IMG_WIDTH) + center_y
-        r = r * (CONSTANTS.IMG_WIDTH / gsd_x)
+        x = ((x / gsd_x) * img_width) + center_x
+        y = ((y / gsd_y) * img_height) + center_y
+        r = r * (img_width / gsd_x)
 
         return [x, y, r]
 
@@ -347,13 +346,15 @@ class ColonyFinder:
         """
         Randomly removes colonies from coordinate dict if there are more than 96 total valid colonies
         """
+
+        coords = self.valid_coords
+
         logging.info("Removing extra colonies...")
         try:
             # num_colonies_to_sample = 0
             total_num_colonies = 0
             counter_dict = {}
             num_colonies_to_sample = 0
-            coords = self.valid_coords
 
             for _, coord_list in coords.items():
                 total_num_colonies = total_num_colonies + len(coord_list)
@@ -417,8 +418,6 @@ class ColonyFinder:
         )
         annotated_images = {}
         coords = self.final_coords
-        # coords = self.valid_coords
-        # coords = self.raw_coords
 
         try:
             # Loop through each image file in the specified folder path
@@ -445,7 +444,9 @@ class ColonyFinder:
 
                             if well_number_index_counter < 96:
                                 colony_number = CONSTANTS.WELLS[well_number_index_counter]
-                                well_number_index_counter += 1
+                                well_number_index_counter = (
+                                    well_number_index_counter + 1
+                                )
                             else:
                                 logging.error(
                                     "Tried to create annotations for over 96 colonies. Extra colonies must be removed before beginning sampling."
@@ -459,13 +460,9 @@ class ColonyFinder:
                         # draw circles around colonies, and write colony number next to them
                         try:
                             if colony_number != "ERR":
-                                random_color = (
-                                    random.randint(155, 255),
-                                    random.randint(155, 255),
-                                    random.randint(155, 255),
-                                )
+                                
 
-                                cv2.circle(image, (x, y), 1, (255, 0, 0), 3)
+                                cv2.circle(image, (x, y), 1, (255, 200, 0), 3)
                                 cv2.circle(
                                     image,
                                     (x, y),
@@ -473,7 +470,7 @@ class ColonyFinder:
                                         CONSTANTS.MIN_COLONY_DISTANCE 
                                         * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
                                     ),
-                                    random_color,
+                                    (255,200,0),
                                     2,
                                 )
 
@@ -496,7 +493,7 @@ class ColonyFinder:
                                     str(colony_number),
                                     (int(x + 15), int(y - 15)),
                                     cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                    random_color,
+                                    (255, 255, 255),
                                     3,
                                 )
 
@@ -504,10 +501,19 @@ class ColonyFinder:
                             logging.error("Error drawing annotations")
                             raise RuntimeError("Error drawing annotations")
 
-                xlim_col = int(
-                    CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
-                )
-                # xlim_col = int(xlim_col + (CONSTANTS.IMG_WIDTH / 2))
+                # cv2.circle(
+                #     image,
+                #     (int(0.5 * image_width), int(0.5 * image_height)),
+                #     int(petri_dish_roi * image_width / gsd_x),
+                #     (0, 255, 0),
+                #     2,
+                # )
+
+                # # show oob check limit
+                # xlim_col = int(
+                #     CONSTANTS.XLIMIT_MIN * (CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X)
+                # )
+                # xlim_col = int(xlim_col + (image_width / 2))
                 # cv2.line(
                 #     image,
                 #     (xlim_col, 0),
@@ -515,14 +521,6 @@ class ColonyFinder:
                 #     (0, 255, 0),
                 #     2,
                 # )
-
-                cv2.circle(
-                    image,
-                    (int(0.5 * CONSTANTS.IMG_WIDTH), int(0.5 * CONSTANTS.IMG_HEIGHT)),
-                    int(CONSTANTS.PETRI_DISH_ROI * CONSTANTS.IMG_WIDTH / CONSTANTS.GSD_X),
-                    (0, 255, 0),
-                    2,
-                )
 
                 annotated_images[image_name] = image
                 
